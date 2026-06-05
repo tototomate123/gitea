@@ -13,16 +13,16 @@ import (
 	"sync"
 	"time"
 
-	"code.gitea.io/gitea/models/avatars"
-	repo_model "code.gitea.io/gitea/models/repo"
-	user_model "code.gitea.io/gitea/models/user"
-	"code.gitea.io/gitea/modules/cache"
-	"code.gitea.io/gitea/modules/git"
-	"code.gitea.io/gitea/modules/git/gitcmd"
-	"code.gitea.io/gitea/modules/gitrepo"
-	"code.gitea.io/gitea/modules/graceful"
-	"code.gitea.io/gitea/modules/log"
-	api "code.gitea.io/gitea/modules/structs"
+	"gitea.dev/models/avatars"
+	repo_model "gitea.dev/models/repo"
+	user_model "gitea.dev/models/user"
+	"gitea.dev/modules/cache"
+	"gitea.dev/modules/git"
+	"gitea.dev/modules/git/gitcmd"
+	"gitea.dev/modules/gitrepo"
+	"gitea.dev/modules/graceful"
+	"gitea.dev/modules/log"
+	api "gitea.dev/modules/structs"
 )
 
 const (
@@ -84,7 +84,7 @@ func GetContributorStats(ctx context.Context, cache cache.StringCache, repo *rep
 	if !cache.IsExist(cacheKey) {
 		genReady := make(chan struct{})
 
-		// dont start multiple async generations
+		// don't start multiple async generations
 		_, run := generateLock.Load(cacheKey)
 		if run {
 			return nil, ErrAwaitGeneration

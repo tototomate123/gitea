@@ -12,14 +12,14 @@ import (
 	"strconv"
 	"strings"
 
-	"code.gitea.io/gitea/modules/httplib"
-	"code.gitea.io/gitea/modules/json"
-	"code.gitea.io/gitea/modules/log"
-	"code.gitea.io/gitea/modules/reqctx"
-	"code.gitea.io/gitea/modules/setting"
-	"code.gitea.io/gitea/modules/translation"
-	"code.gitea.io/gitea/modules/util"
-	"code.gitea.io/gitea/modules/web/middleware"
+	"gitea.dev/modules/httplib"
+	"gitea.dev/modules/json"
+	"gitea.dev/modules/log"
+	"gitea.dev/modules/reqctx"
+	"gitea.dev/modules/setting"
+	"gitea.dev/modules/translation"
+	"gitea.dev/modules/util"
+	"gitea.dev/modules/web/middleware"
 )
 
 type BaseContextKeyType struct{}
@@ -159,26 +159,24 @@ func (b *Base) Redirect(location string, status ...int) {
 		// So in this case, we should remove the session cookie from the response header
 		removeSessionCookieHeader(b.Resp)
 	}
-	// in case the request is made by htmx, have it redirect the browser instead of trying to follow the redirect inside htmx
-	if b.Req.Header.Get("HX-Request") == "true" {
-		b.Resp.Header().Set("HX-Redirect", location)
-		// we have to return a non-redirect status code so XMLHTTPRequest will not immediately follow the redirect
-		// so as to give htmx redirect logic a chance to run
-		b.Status(http.StatusNoContent)
+	// In case the request is made by "fetch-action" module, make JS redirect to the new location
+	// Otherwise, the JS fetch will follow the redirection and read a "login" page, embed it to the current page, which is not expected.
+	if b.Req.Header.Get("X-Gitea-Fetch-Action") != "" {
+		b.JSON(http.StatusOK, map[string]any{"redirect": location})
 		return
 	}
 	http.Redirect(b.Resp, b.Req, location, code)
 }
 
-type ServeHeaderOptions httplib.ServeHeaderOptions
+type ServeHeaderOptions = httplib.ServeHeaderOptions
 
-func (b *Base) SetServeHeaders(opt *ServeHeaderOptions) {
-	httplib.ServeSetHeaders(b.Resp, (*httplib.ServeHeaderOptions)(opt))
+func (b *Base) SetServeHeaders(opts ServeHeaderOptions) {
+	httplib.ServeSetHeaders(b.Resp, opts)
 }
 
 // ServeContent serves content to http request
-func (b *Base) ServeContent(r io.ReadSeeker, opts *ServeHeaderOptions) {
-	httplib.ServeSetHeaders(b.Resp, (*httplib.ServeHeaderOptions)(opts))
+func (b *Base) ServeContent(r io.ReadSeeker, opts ServeHeaderOptions) {
+	httplib.ServeSetHeaders(b.Resp, opts)
 	http.ServeContent(b.Resp, b.Req, opts.Filename, opts.LastModified, r)
 }
 

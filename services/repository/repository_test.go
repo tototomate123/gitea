@@ -6,11 +6,11 @@ package repository
 import (
 	"testing"
 
-	activities_model "code.gitea.io/gitea/models/activities"
-	"code.gitea.io/gitea/models/db"
-	repo_model "code.gitea.io/gitea/models/repo"
-	"code.gitea.io/gitea/models/unit"
-	"code.gitea.io/gitea/models/unittest"
+	activities_model "gitea.dev/models/activities"
+	"gitea.dev/models/db"
+	repo_model "gitea.dev/models/repo"
+	"gitea.dev/models/unit"
+	"gitea.dev/models/unittest"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -74,13 +74,13 @@ func TestMakeRepoPrivateClearsWatches(t *testing.T) {
 	assert.NoError(t, unittest.PrepareTestDatabase())
 
 	repo := unittest.AssertExistsAndLoadBean(t, &repo_model.Repository{ID: 1})
-	repo.IsPrivate = false
+	assert.False(t, repo.IsPrivate)
 
 	watchers, err := repo_model.GetRepoWatchersIDs(t.Context(), repo.ID)
 	require.NoError(t, err)
 	require.NotEmpty(t, watchers)
 
-	assert.NoError(t, MakeRepoPrivate(t.Context(), repo))
+	assert.NoError(t, MakeRepoPrivate(t.Context(), repo, true))
 
 	watchers, err = repo_model.GetRepoWatchersIDs(t.Context(), repo.ID)
 	assert.NoError(t, err)

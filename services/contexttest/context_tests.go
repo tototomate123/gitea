@@ -15,19 +15,19 @@ import (
 	"testing"
 	"time"
 
-	access_model "code.gitea.io/gitea/models/perm/access"
-	repo_model "code.gitea.io/gitea/models/repo"
-	"code.gitea.io/gitea/models/unittest"
-	user_model "code.gitea.io/gitea/models/user"
-	"code.gitea.io/gitea/modules/cache"
-	git_module "code.gitea.io/gitea/modules/git"
-	"code.gitea.io/gitea/modules/gitrepo"
-	"code.gitea.io/gitea/modules/reqctx"
-	"code.gitea.io/gitea/modules/session"
-	"code.gitea.io/gitea/modules/templates"
-	"code.gitea.io/gitea/modules/translation"
-	"code.gitea.io/gitea/modules/web/middleware"
-	"code.gitea.io/gitea/services/context"
+	access_model "gitea.dev/models/perm/access"
+	repo_model "gitea.dev/models/repo"
+	"gitea.dev/models/unittest"
+	user_model "gitea.dev/models/user"
+	"gitea.dev/modules/cache"
+	git_module "gitea.dev/modules/git"
+	"gitea.dev/modules/gitrepo"
+	"gitea.dev/modules/reqctx"
+	"gitea.dev/modules/session"
+	"gitea.dev/modules/templates"
+	"gitea.dev/modules/translation"
+	"gitea.dev/modules/web/middleware"
+	"gitea.dev/services/context"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
@@ -125,7 +125,7 @@ func LoadRepo(t *testing.T, ctx gocontext.Context, repoID int64) {
 	repo.Owner, err = user_model.GetUserByID(ctx, repo.Repository.OwnerID)
 	assert.NoError(t, err)
 	repo.RepoLink = repo.Repository.Link()
-	repo.Permission, err = access_model.GetUserRepoPermission(ctx, repo.Repository, doer)
+	repo.Permission, err = access_model.GetDoerRepoPermission(ctx, repo.Repository, doer)
 	assert.NoError(t, err)
 }
 

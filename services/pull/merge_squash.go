@@ -6,13 +6,13 @@ package pull
 import (
 	"fmt"
 
-	repo_model "code.gitea.io/gitea/models/repo"
-	user_model "code.gitea.io/gitea/models/user"
-	"code.gitea.io/gitea/modules/container"
-	"code.gitea.io/gitea/modules/git"
-	"code.gitea.io/gitea/modules/git/gitcmd"
-	"code.gitea.io/gitea/modules/log"
-	"code.gitea.io/gitea/modules/setting"
+	repo_model "gitea.dev/models/repo"
+	user_model "gitea.dev/models/user"
+	"gitea.dev/modules/container"
+	"gitea.dev/modules/git"
+	"gitea.dev/modules/git/gitcmd"
+	"gitea.dev/modules/log"
+	"gitea.dev/modules/setting"
 )
 
 // doMergeStyleSquash gets a commit author signature for squash commits
@@ -73,14 +73,7 @@ func doMergeStyleSquash(ctx *mergeContext, message string) error {
 		AddOptionFormat("--author='%s <%s>'", sig.Name, sig.Email).
 		AddOptionFormat("--message=%s", message).
 		AddArguments("--allow-empty")
-	if ctx.signKey == nil {
-		cmdCommit.AddArguments("--no-gpg-sign")
-	} else {
-		if ctx.signKey.Format != "" {
-			cmdCommit.AddConfig("gpg.format", ctx.signKey.Format)
-		}
-		cmdCommit.AddOptionFormat("-S%s", ctx.signKey.KeyID)
-	}
+	addCommitSigningOptions(cmdCommit, ctx.signKey)
 	if err := ctx.PrepareGitCmd(cmdCommit).RunWithStderr(ctx); err != nil {
 		log.Error("git commit %-v: %v\n%s\n%s", ctx.pr, err, ctx.outbuf.String(), err.Stderr())
 		return fmt.Errorf("git commit [%s:%s -> %s:%s]: %w\n%s\n%s", ctx.pr.HeadRepo.FullName(), ctx.pr.HeadBranch, ctx.pr.BaseRepo.FullName(), ctx.pr.BaseBranch, err, ctx.outbuf.String(), err.Stderr())

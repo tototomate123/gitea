@@ -1,11 +1,9 @@
 {
   "consumes": [
-    "application/json",
-    "text/plain"
+    "application/json"
   ],
   "produces": [
-    "application/json",
-    "text/html"
+    "application/json"
   ],
   "schemes": [
     "https",
@@ -23,58 +21,6 @@
   },
   "basePath": "{{.SwaggerAppSubUrl}}/api/v1",
   "paths": {
-    "/activitypub/user-id/{user-id}": {
-      "get": {
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "activitypub"
-        ],
-        "summary": "Returns the Person actor for a user",
-        "operationId": "activitypubPerson",
-        "parameters": [
-          {
-            "type": "integer",
-            "description": "user ID of the user",
-            "name": "user-id",
-            "in": "path",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "$ref": "#/responses/ActivityPub"
-          }
-        }
-      }
-    },
-    "/activitypub/user-id/{user-id}/inbox": {
-      "post": {
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "activitypub"
-        ],
-        "summary": "Send to the inbox",
-        "operationId": "activitypubPersonInbox",
-        "parameters": [
-          {
-            "type": "integer",
-            "description": "user ID of the user",
-            "name": "user-id",
-            "in": "path",
-            "required": true
-          }
-        ],
-        "responses": {
-          "204": {
-            "$ref": "#/responses/empty"
-          }
-        }
-      }
-    },
     "/admin/actions/jobs": {
       "get": {
         "produces": [
@@ -103,6 +49,18 @@
             "description": "page size of results",
             "name": "limit",
             "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "sort jobs by attribute. Supported values are \"id\". Default is \"id\"",
+            "name": "sort",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "sort order, either \"asc\" (ascending) or \"desc\" (descending). Default is \"asc\"",
+            "name": "order",
+            "in": "query"
           }
         ],
         "responses": {
@@ -114,6 +72,9 @@
           },
           "404": {
             "$ref": "#/responses/notFound"
+          },
+          "422": {
+            "$ref": "#/responses/validationError"
           }
         }
       }
@@ -128,9 +89,17 @@
         ],
         "summary": "Get all runners",
         "operationId": "getAdminRunners",
+        "parameters": [
+          {
+            "type": "boolean",
+            "description": "filter by disabled status (true or false)",
+            "name": "disabled",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
-            "$ref": "#/definitions/ActionRunnersResponse"
+            "$ref": "#/responses/RunnerList"
           },
           "400": {
             "$ref": "#/responses/error"
@@ -179,7 +148,7 @@
         ],
         "responses": {
           "200": {
-            "$ref": "#/definitions/ActionRunner"
+            "$ref": "#/responses/Runner"
           },
           "400": {
             "$ref": "#/responses/error"
@@ -216,6 +185,49 @@
           },
           "404": {
             "$ref": "#/responses/notFound"
+          }
+        }
+      },
+      "patch": {
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "admin"
+        ],
+        "summary": "Update a global runner",
+        "operationId": "updateAdminRunner",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "id of the runner",
+            "name": "runner_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/EditActionRunnerOption"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/Runner"
+          },
+          "400": {
+            "$ref": "#/responses/error"
+          },
+          "404": {
+            "$ref": "#/responses/notFound"
+          },
+          "422": {
+            "$ref": "#/responses/validationError"
           }
         }
       }
@@ -612,23 +624,6 @@
           },
           "403": {
             "$ref": "#/responses/forbidden"
-          }
-        }
-      }
-    },
-    "/admin/runners/registration-token": {
-      "get": {
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "admin"
-        ],
-        "summary": "Get a global actions runner registration token",
-        "operationId": "adminGetRunnerRegistrationToken",
-        "responses": {
-          "200": {
-            "$ref": "#/responses/RegistrationToken"
           }
         }
       }
@@ -1526,23 +1521,6 @@
         }
       }
     },
-    "/nodeinfo": {
-      "get": {
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "miscellaneous"
-        ],
-        "summary": "Returns the nodeinfo of the Gitea application",
-        "operationId": "getNodeInfo",
-        "responses": {
-          "200": {
-            "$ref": "#/responses/NodeInfo"
-          }
-        }
-      }
-    },
     "/notifications": {
       "get": {
         "consumes": [
@@ -2033,11 +2011,17 @@
             "name": "org",
             "in": "path",
             "required": true
+          },
+          {
+            "type": "boolean",
+            "description": "filter by disabled status (true or false)",
+            "name": "disabled",
+            "in": "query"
           }
         ],
         "responses": {
           "200": {
-            "$ref": "#/definitions/ActionRunnersResponse"
+            "$ref": "#/responses/RunnerList"
           },
           "400": {
             "$ref": "#/responses/error"
@@ -2049,30 +2033,6 @@
       }
     },
     "/orgs/{org}/actions/runners/registration-token": {
-      "get": {
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "organization"
-        ],
-        "summary": "Get an organization's actions runner registration token",
-        "operationId": "orgGetRunnerRegistrationToken",
-        "parameters": [
-          {
-            "type": "string",
-            "description": "name of the organization",
-            "name": "org",
-            "in": "path",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "$ref": "#/responses/RegistrationToken"
-          }
-        }
-      },
       "post": {
         "produces": [
           "application/json"
@@ -2126,7 +2086,7 @@
         ],
         "responses": {
           "200": {
-            "$ref": "#/definitions/ActionRunner"
+            "$ref": "#/responses/Runner"
           },
           "400": {
             "$ref": "#/responses/error"
@@ -2170,6 +2130,56 @@
           },
           "404": {
             "$ref": "#/responses/notFound"
+          }
+        }
+      },
+      "patch": {
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "organization"
+        ],
+        "summary": "Update an org-level runner",
+        "operationId": "updateOrgRunner",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "name of the organization",
+            "name": "org",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "id of the runner",
+            "name": "runner_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/EditActionRunnerOption"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/Runner"
+          },
+          "400": {
+            "$ref": "#/responses/error"
+          },
+          "404": {
+            "$ref": "#/responses/notFound"
+          },
+          "422": {
+            "$ref": "#/responses/validationError"
           }
         }
       }
@@ -3638,6 +3648,39 @@
             "$ref": "#/responses/notFound"
           }
         }
+      },
+      "delete": {
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "organization"
+        ],
+        "summary": "Delete all repositories in an organization",
+        "operationId": "orgDeleteRepos",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "name of the organization",
+            "name": "org",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "202": {
+            "$ref": "#/responses/empty"
+          },
+          "204": {
+            "$ref": "#/responses/empty"
+          },
+          "403": {
+            "$ref": "#/responses/forbidden"
+          },
+          "404": {
+            "$ref": "#/responses/notFound"
+          }
+        }
       }
     },
     "/orgs/{org}/teams": {
@@ -3840,6 +3883,7 @@
               "rpm",
               "rubygems",
               "swift",
+              "terraform",
               "vagrant"
             ],
             "type": "string",
@@ -3912,6 +3956,44 @@
         "responses": {
           "200": {
             "$ref": "#/responses/PackageList"
+          },
+          "404": {
+            "$ref": "#/responses/notFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "package"
+        ],
+        "summary": "Delete a package",
+        "operationId": "deletePackage",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "owner of the package",
+            "name": "owner",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "type of the package",
+            "name": "type",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "name of the package",
+            "name": "name",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "204": {
+            "$ref": "#/responses/empty"
           },
           "404": {
             "$ref": "#/responses/notFound"
@@ -4102,8 +4184,8 @@
         "tags": [
           "package"
         ],
-        "summary": "Delete a package",
-        "operationId": "deletePackage",
+        "summary": "Delete a package version",
+        "operationId": "deletePackageVersion",
         "parameters": [
           {
             "type": "string",
@@ -4298,6 +4380,12 @@
             "type": "string",
             "description": "Filter by repository owner",
             "name": "owner",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "Only show items which were created by the given user",
+            "name": "created_by",
             "in": "query"
           },
           {
@@ -4845,6 +4933,18 @@
             "description": "page size of results",
             "name": "limit",
             "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "sort jobs by attribute. Supported values are \"id\". Default is \"id\"",
+            "name": "sort",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "sort order, either \"asc\" (ascending) or \"desc\" (descending). Default is \"asc\"",
+            "name": "order",
+            "in": "query"
           }
         ],
         "responses": {
@@ -4856,6 +4956,9 @@
           },
           "404": {
             "$ref": "#/responses/notFound"
+          },
+          "422": {
+            "$ref": "#/responses/validationError"
           }
         }
       }
@@ -4976,11 +5079,17 @@
             "name": "repo",
             "in": "path",
             "required": true
+          },
+          {
+            "type": "boolean",
+            "description": "filter by disabled status (true or false)",
+            "name": "disabled",
+            "in": "query"
           }
         ],
         "responses": {
           "200": {
-            "$ref": "#/definitions/ActionRunnersResponse"
+            "$ref": "#/responses/RunnerList"
           },
           "400": {
             "$ref": "#/responses/error"
@@ -4992,37 +5101,6 @@
       }
     },
     "/repos/{owner}/{repo}/actions/runners/registration-token": {
-      "get": {
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "repository"
-        ],
-        "summary": "Get a repository's actions runner registration token",
-        "operationId": "repoGetRunnerRegistrationToken",
-        "parameters": [
-          {
-            "type": "string",
-            "description": "owner of the repo",
-            "name": "owner",
-            "in": "path",
-            "required": true
-          },
-          {
-            "type": "string",
-            "description": "name of the repo",
-            "name": "repo",
-            "in": "path",
-            "required": true
-          }
-        ],
-        "responses": {
-          "200": {
-            "$ref": "#/responses/RegistrationToken"
-          }
-        }
-      },
       "post": {
         "produces": [
           "application/json"
@@ -5063,7 +5141,7 @@
         "tags": [
           "repository"
         ],
-        "summary": "Get an repo-level runner",
+        "summary": "Get a repo-level runner",
         "operationId": "getRepoRunner",
         "parameters": [
           {
@@ -5090,7 +5168,7 @@
         ],
         "responses": {
           "200": {
-            "$ref": "#/definitions/ActionRunner"
+            "$ref": "#/responses/Runner"
           },
           "400": {
             "$ref": "#/responses/error"
@@ -5107,7 +5185,7 @@
         "tags": [
           "repository"
         ],
-        "summary": "Delete an repo-level runner",
+        "summary": "Delete a repo-level runner",
         "operationId": "deleteRepoRunner",
         "parameters": [
           {
@@ -5141,6 +5219,63 @@
           },
           "404": {
             "$ref": "#/responses/notFound"
+          }
+        }
+      },
+      "patch": {
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "repository"
+        ],
+        "summary": "Update a repo-level runner",
+        "operationId": "updateRepoRunner",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "owner of the repo",
+            "name": "owner",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "name of the repo",
+            "name": "repo",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "id of the runner",
+            "name": "runner_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/EditActionRunnerOption"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/Runner"
+          },
+          "400": {
+            "$ref": "#/responses/error"
+          },
+          "404": {
+            "$ref": "#/responses/notFound"
+          },
+          "422": {
+            "$ref": "#/responses/validationError"
           }
         }
       }
@@ -5252,7 +5387,7 @@
             "required": true
           },
           {
-            "type": "string",
+            "type": "integer",
             "description": "id of the run",
             "name": "run",
             "in": "path",
@@ -5368,6 +5503,130 @@
         }
       }
     },
+    "/repos/{owner}/{repo}/actions/runs/{run}/attempts/{attempt}": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "repository"
+        ],
+        "summary": "Gets a specific workflow run attempt",
+        "operationId": "getWorkflowRunAttempt",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "owner of the repo",
+            "name": "owner",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "name of the repository",
+            "name": "repo",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "description": "id of the run",
+            "name": "run",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "description": "logical attempt number of the run",
+            "name": "attempt",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/WorkflowRun"
+          },
+          "400": {
+            "$ref": "#/responses/error"
+          },
+          "404": {
+            "$ref": "#/responses/notFound"
+          }
+        }
+      }
+    },
+    "/repos/{owner}/{repo}/actions/runs/{run}/attempts/{attempt}/jobs": {
+      "get": {
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "repository"
+        ],
+        "summary": "Lists all jobs for a workflow run attempt",
+        "operationId": "listWorkflowRunAttemptJobs",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "owner of the repo",
+            "name": "owner",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "name of the repository",
+            "name": "repo",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "description": "id of the workflow run",
+            "name": "run",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "description": "logical attempt number of the run",
+            "name": "attempt",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "workflow status (pending, queued, in_progress, failure, success, skipped)",
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "description": "page number of results to return (1-based)",
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "description": "page size of results",
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/WorkflowJobsList"
+          },
+          "400": {
+            "$ref": "#/responses/error"
+          },
+          "404": {
+            "$ref": "#/responses/notFound"
+          }
+        }
+      }
+    },
     "/repos/{owner}/{repo}/actions/runs/{run}/jobs": {
       "get": {
         "produces": [
@@ -5417,6 +5676,18 @@
             "description": "page size of results",
             "name": "limit",
             "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "sort jobs by attribute. Supported values are \"id\". Default is \"id\"",
+            "name": "sort",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "sort order, either \"asc\" (ascending) or \"desc\" (descending). Default is \"asc\"",
+            "name": "order",
+            "in": "query"
           }
         ],
         "responses": {
@@ -5428,6 +5699,178 @@
           },
           "404": {
             "$ref": "#/responses/notFound"
+          },
+          "422": {
+            "$ref": "#/responses/validationError"
+          }
+        }
+      }
+    },
+    "/repos/{owner}/{repo}/actions/runs/{run}/jobs/{job_id}/rerun": {
+      "post": {
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "repository"
+        ],
+        "summary": "Reruns a specific workflow job in a run",
+        "operationId": "rerunWorkflowJob",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "owner of the repo",
+            "name": "owner",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "name of the repository",
+            "name": "repo",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "description": "id of the run",
+            "name": "run",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "description": "id of the job",
+            "name": "job_id",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "201": {
+            "$ref": "#/responses/WorkflowJob"
+          },
+          "400": {
+            "$ref": "#/responses/error"
+          },
+          "403": {
+            "$ref": "#/responses/forbidden"
+          },
+          "404": {
+            "$ref": "#/responses/notFound"
+          },
+          "409": {
+            "$ref": "#/responses/error"
+          },
+          "422": {
+            "$ref": "#/responses/validationError"
+          }
+        }
+      }
+    },
+    "/repos/{owner}/{repo}/actions/runs/{run}/rerun": {
+      "post": {
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "repository"
+        ],
+        "summary": "Reruns an entire workflow run",
+        "operationId": "rerunWorkflowRun",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "owner of the repo",
+            "name": "owner",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "name of the repository",
+            "name": "repo",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "description": "id of the run",
+            "name": "run",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "201": {
+            "$ref": "#/responses/WorkflowRun"
+          },
+          "400": {
+            "$ref": "#/responses/error"
+          },
+          "403": {
+            "$ref": "#/responses/forbidden"
+          },
+          "404": {
+            "$ref": "#/responses/notFound"
+          },
+          "409": {
+            "$ref": "#/responses/error"
+          },
+          "422": {
+            "$ref": "#/responses/validationError"
+          }
+        }
+      }
+    },
+    "/repos/{owner}/{repo}/actions/runs/{run}/rerun-failed-jobs": {
+      "post": {
+        "tags": [
+          "repository"
+        ],
+        "summary": "Reruns all failed jobs in a workflow run",
+        "operationId": "rerunFailedWorkflowRun",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "owner of the repo",
+            "name": "owner",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "name of the repository",
+            "name": "repo",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "description": "id of the run",
+            "name": "run",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "201": {
+            "$ref": "#/responses/empty"
+          },
+          "400": {
+            "$ref": "#/responses/error"
+          },
+          "403": {
+            "$ref": "#/responses/forbidden"
+          },
+          "404": {
+            "$ref": "#/responses/notFound"
+          },
+          "409": {
+            "$ref": "#/responses/error"
+          },
+          "422": {
+            "$ref": "#/responses/validationError"
           }
         }
       }
@@ -6094,11 +6537,20 @@
             "schema": {
               "$ref": "#/definitions/CreateActionWorkflowDispatch"
             }
+          },
+          {
+            "type": "boolean",
+            "description": "Whether the response should include the workflow run ID and URLs.",
+            "name": "return_run_details",
+            "in": "query"
           }
         ],
         "responses": {
+          "200": {
+            "$ref": "#/responses/RunDetails"
+          },
           "204": {
-            "description": "No Content"
+            "description": "No Content, if return_run_details is missing or false"
           },
           "400": {
             "$ref": "#/responses/error"
@@ -6705,6 +7157,12 @@
             "type": "integer",
             "description": "page size of results",
             "name": "limit",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "branch name substring to filter by",
+            "name": "q",
             "in": "query"
           }
         ],
@@ -10026,7 +10484,7 @@
           }
         ],
         "responses": {
-          "200": {
+          "204": {
             "$ref": "#/responses/empty"
           },
           "403": {
@@ -10160,6 +10618,7 @@
         }
       },
       "patch": {
+        "description": "Pass `content_version` to enable optimistic locking on body edits.\nIf the version doesn't match the current value, the request fails with 409 Conflict.\n",
         "consumes": [
           "application/json"
         ],
@@ -11765,7 +12224,7 @@
           }
         ],
         "responses": {
-          "200": {
+          "204": {
             "$ref": "#/responses/empty"
           },
           "403": {
@@ -14062,6 +14521,75 @@
         }
       }
     },
+    "/repos/{owner}/{repo}/pulls/{index}/comments/{id}/replies": {
+      "post": {
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "repository"
+        ],
+        "summary": "Reply to a pull request review comment",
+        "operationId": "repoCreatePullReviewCommentReply",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "owner of the repo",
+            "name": "owner",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "description": "name of the repo",
+            "name": "repo",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "index of the pull request",
+            "name": "index",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "description": "id of the review comment to reply to",
+            "name": "id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CreatePullReviewCommentReplyOptions"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "$ref": "#/responses/PullReviewComment"
+          },
+          "400": {
+            "$ref": "#/responses/validationError"
+          },
+          "404": {
+            "$ref": "#/responses/notFound"
+          },
+          "422": {
+            "$ref": "#/responses/validationError"
+          }
+        }
+      }
+    },
     "/repos/{owner}/{repo}/pulls/{index}/commits": {
       "get": {
         "produces": [
@@ -14290,6 +14818,9 @@
         "responses": {
           "200": {
             "$ref": "#/responses/empty"
+          },
+          "403": {
+            "$ref": "#/responses/forbidden"
           },
           "404": {
             "$ref": "#/responses/notFound"
@@ -14527,7 +15058,7 @@
         "tags": [
           "repository"
         ],
-        "summary": "Create a review to an pull request",
+        "summary": "Create a review to a pull request",
         "operationId": "repoCreatePullReview",
         "parameters": [
           {
@@ -14632,7 +15163,7 @@
         "tags": [
           "repository"
         ],
-        "summary": "Submit a pending review to an pull request",
+        "summary": "Submit a pending review to a pull request",
         "operationId": "repoSubmitPullReview",
         "parameters": [
           {
@@ -15121,6 +15652,9 @@
           },
           "404": {
             "$ref": "#/responses/notFound"
+          },
+          "422": {
+            "$ref": "#/responses/validationError"
           }
         }
       }
@@ -15297,7 +15831,7 @@
           },
           {
             "type": "boolean",
-            "description": "filter (exclude / include) drafts, if you dont have repo write access none will show",
+            "description": "filter (exclude / include) drafts, if you don't have repo write access none will show",
             "name": "draft",
             "in": "query"
           },
@@ -18431,6 +18965,18 @@
             "description": "page size of results",
             "name": "limit",
             "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "sort jobs by attribute. Supported values are \"id\". Default is \"id\"",
+            "name": "sort",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "description": "sort order, either \"asc\" (ascending) or \"desc\" (descending). Default is \"asc\"",
+            "name": "order",
+            "in": "query"
           }
         ],
         "responses": {
@@ -18442,6 +18988,9 @@
           },
           "404": {
             "$ref": "#/responses/notFound"
+          },
+          "422": {
+            "$ref": "#/responses/validationError"
           }
         }
       }
@@ -18456,9 +19005,17 @@
         ],
         "summary": "Get user-level runners",
         "operationId": "getUserRunners",
+        "parameters": [
+          {
+            "type": "boolean",
+            "description": "filter by disabled status (true or false)",
+            "name": "disabled",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
-            "$ref": "#/definitions/ActionRunnersResponse"
+            "$ref": "#/responses/RunnerList"
           },
           "400": {
             "$ref": "#/responses/error"
@@ -18470,21 +19027,6 @@
       }
     },
     "/user/actions/runners/registration-token": {
-      "get": {
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "user"
-        ],
-        "summary": "Get an user's actions runner registration token",
-        "operationId": "userGetRunnerRegistrationToken",
-        "responses": {
-          "200": {
-            "$ref": "#/responses/RegistrationToken"
-          }
-        }
-      },
       "post": {
         "produces": [
           "application/json"
@@ -18492,7 +19034,7 @@
         "tags": [
           "user"
         ],
-        "summary": "Get an user's actions runner registration token",
+        "summary": "Get a user's actions runner registration token",
         "operationId": "userCreateRunnerRegistrationToken",
         "responses": {
           "200": {
@@ -18509,7 +19051,7 @@
         "tags": [
           "user"
         ],
-        "summary": "Get an user-level runner",
+        "summary": "Get a user-level runner",
         "operationId": "getUserRunner",
         "parameters": [
           {
@@ -18522,7 +19064,7 @@
         ],
         "responses": {
           "200": {
-            "$ref": "#/definitions/ActionRunner"
+            "$ref": "#/responses/Runner"
           },
           "400": {
             "$ref": "#/responses/error"
@@ -18539,7 +19081,7 @@
         "tags": [
           "user"
         ],
-        "summary": "Delete an user-level runner",
+        "summary": "Delete a user-level runner",
         "operationId": "deleteUserRunner",
         "parameters": [
           {
@@ -18559,6 +19101,49 @@
           },
           "404": {
             "$ref": "#/responses/notFound"
+          }
+        }
+      },
+      "patch": {
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "user"
+        ],
+        "summary": "Update a user-level runner",
+        "operationId": "updateUserRunner",
+        "parameters": [
+          {
+            "type": "string",
+            "description": "id of the runner",
+            "name": "runner_id",
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/EditActionRunnerOption"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/Runner"
+          },
+          "400": {
+            "$ref": "#/responses/error"
+          },
+          "404": {
+            "$ref": "#/responses/notFound"
+          },
+          "422": {
+            "$ref": "#/responses/validationError"
           }
         }
       }
@@ -19039,6 +19624,9 @@
         "responses": {
           "200": {
             "$ref": "#/responses/OAuth2Application"
+          },
+          "400": {
+            "$ref": "#/responses/error"
           },
           "404": {
             "$ref": "#/responses/notFound"
@@ -21017,7 +21605,7 @@
           "x-go-name": "URL"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "AccessToken": {
       "type": "object",
@@ -21065,7 +21653,7 @@
           "x-go-name": "TokenLastEight"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "ActionArtifact": {
       "description": "ActionArtifact represents a ActionArtifact",
@@ -21116,7 +21704,7 @@
           "$ref": "#/definitions/ActionWorkflowRun"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "ActionArtifactsResponse": {
       "description": "ActionArtifactsResponse returns ActionArtifacts",
@@ -21135,7 +21723,7 @@
           "x-go-name": "TotalCount"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "ActionRunner": {
       "description": "ActionRunner represents a Runner",
@@ -21144,6 +21732,10 @@
         "busy": {
           "type": "boolean",
           "x-go-name": "Busy"
+        },
+        "disabled": {
+          "type": "boolean",
+          "x-go-name": "Disabled"
         },
         "ephemeral": {
           "type": "boolean",
@@ -21170,7 +21762,7 @@
           "x-go-name": "Status"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "ActionRunnerLabel": {
       "description": "ActionRunnerLabel represents a Runner Label",
@@ -21190,7 +21782,7 @@
           "x-go-name": "Type"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "ActionRunnersResponse": {
       "description": "ActionRunnersResponse returns Runners",
@@ -21209,7 +21801,7 @@
           "x-go-name": "TotalCount"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "ActionTask": {
       "description": "ActionTask represents a ActionTask",
@@ -21283,7 +21875,7 @@
           "x-go-name": "WorkflowID"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "ActionTaskResponse": {
       "description": "ActionTaskResponse returns a ActionTask",
@@ -21304,7 +21896,7 @@
           "x-go-name": "Entries"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "ActionVariable": {
       "description": "ActionVariable return value of the query API",
@@ -21338,7 +21930,7 @@
           "x-go-name": "RepoID"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "ActionWorkflow": {
       "description": "ActionWorkflow represents a ActionWorkflow",
@@ -21395,7 +21987,7 @@
           "x-go-name": "URL"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "ActionWorkflowJob": {
       "description": "ActionWorkflowJob represents a WorkflowJob",
@@ -21487,7 +22079,7 @@
           "x-go-name": "URL"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "ActionWorkflowJobsResponse": {
       "description": "ActionWorkflowJobsResponse returns ActionWorkflowJobs",
@@ -21506,7 +22098,7 @@
           "x-go-name": "TotalCount"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "ActionWorkflowResponse": {
       "description": "ActionWorkflowResponse returns a ActionWorkflow",
@@ -21525,7 +22117,7 @@
           "x-go-name": "Workflows"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "ActionWorkflowRun": {
       "description": "ActionWorkflowRun represents a WorkflowRun",
@@ -21575,6 +22167,11 @@
           "type": "string",
           "x-go-name": "Path"
         },
+        "previous_attempt_url": {
+          "description": "PreviousAttemptURL is the API URL of the previous attempt of this run, e.g. \".../actions/runs/{run_id}/attempts/{attempt-1}\".\nIt is set only when the current attempt is \u003e 1 (i.e. a rerun). For the first attempt, or for legacy runs that pre-date ActionRunAttempt, it is null.",
+          "type": "string",
+          "x-go-name": "PreviousAttemptURL"
+        },
         "repository": {
           "$ref": "#/definitions/Repository"
         },
@@ -21584,6 +22181,7 @@
           "x-go-name": "RepositoryID"
         },
         "run_attempt": {
+          "description": "RunAttempt is 1-based for runs created after ActionRunAttempt was introduced.\nA value of 0 is a legacy-only sentinel for runs created before attempts existed\nand indicates no corresponding /attempts/{n} resource is available.",
           "type": "integer",
           "format": "int64",
           "x-go-name": "RunAttempt"
@@ -21610,7 +22208,7 @@
           "x-go-name": "URL"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "ActionWorkflowRunsResponse": {
       "description": "ActionWorkflowRunsResponse returns ActionWorkflowRuns",
@@ -21629,7 +22227,7 @@
           "x-go-name": "Entries"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "ActionWorkflowStep": {
       "description": "ActionWorkflowStep represents a step of a WorkflowJob",
@@ -21663,7 +22261,7 @@
           "x-go-name": "Status"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "Activity": {
       "type": "object",
@@ -21763,35 +22361,25 @@
           "x-go-name": "UserID"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
-    },
-    "ActivityPub": {
-      "description": "ActivityPub type",
-      "type": "object",
-      "properties": {
-        "@context": {
-          "description": "Context defines the JSON-LD context for ActivityPub",
-          "type": "string",
-          "x-go-name": "Context"
-        }
-      },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "AddCollaboratorOption": {
       "description": "AddCollaboratorOption options when adding a user as a collaborator of a repository",
       "type": "object",
       "properties": {
         "permission": {
+          "description": "Permission level to grant the collaborator\nread RepoWritePermissionRead\nwrite RepoWritePermissionWrite\nadmin RepoWritePermissionAdmin",
           "type": "string",
           "enum": [
             "read",
             "write",
             "admin"
           ],
+          "x-go-enum-desc": "read RepoWritePermissionRead\nwrite RepoWritePermissionWrite\nadmin RepoWritePermissionAdmin",
           "x-go-name": "Permission"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "AddTimeOption": {
       "description": "AddTimeOption options for adding time to an issue",
@@ -21817,7 +22405,7 @@
           "x-go-name": "User"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "AnnotatedTag": {
       "description": "AnnotatedTag represents an annotated tag",
@@ -21853,7 +22441,7 @@
           "$ref": "#/definitions/PayloadCommitVerification"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "AnnotatedTagObject": {
       "description": "AnnotatedTagObject contains meta information of the tag object",
@@ -21875,7 +22463,7 @@
           "x-go-name": "URL"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "ApplyDiffPatchFileOptions": {
       "description": "ApplyDiffPatchFileOptions options for applying a diff patch\nNote: `author` and `committer` are optional (if only one is given, it will be used for the other, otherwise the authenticated user will be used)",
@@ -21923,7 +22511,7 @@
           "x-go-name": "Signoff"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "Attachment": {
       "description": "Attachment a generic attachment",
@@ -21968,7 +22556,7 @@
           "x-go-name": "UUID"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "Badge": {
       "description": "Badge represents a user badge",
@@ -21992,7 +22580,7 @@
           "x-go-name": "Slug"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "Branch": {
       "description": "Branch represents a repository branch",
@@ -22046,7 +22634,7 @@
           "x-go-name": "UserCanPush"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "BranchProtection": {
       "description": "BranchProtection represents a branch protection for a repository",
@@ -22087,6 +22675,20 @@
           "type": "string",
           "x-go-name": "BranchName"
         },
+        "bypass_allowlist_teams": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-go-name": "BypassAllowlistTeams"
+        },
+        "bypass_allowlist_usernames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-go-name": "BypassAllowlistUsernames"
+        },
         "created_at": {
           "type": "string",
           "format": "date-time",
@@ -22099,6 +22701,10 @@
         "enable_approvals_whitelist": {
           "type": "boolean",
           "x-go-name": "EnableApprovalsWhitelist"
+        },
+        "enable_bypass_allowlist": {
+          "type": "boolean",
+          "x-go-name": "EnableBypassAllowlist"
         },
         "enable_force_push": {
           "type": "boolean",
@@ -22219,7 +22825,7 @@
           "x-go-name": "Updated"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "ChangeFileOperation": {
       "description": "ChangeFileOperation for creating, updating or deleting a file",
@@ -22262,7 +22868,7 @@
           "x-go-name": "SHA"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "ChangeFilesOptions": {
       "description": "ChangeFilesOptions options for creating, updating or deleting multiple files\nNote: `author` and `committer` are optional (if only one is given, it will be used for the other, otherwise the authenticated user will be used)",
@@ -22314,7 +22920,7 @@
           "x-go-name": "Signoff"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "ChangedFile": {
       "description": "ChangedFile store information about files affected by the pull request",
@@ -22369,7 +22975,7 @@
           "x-go-name": "Status"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CombinedStatus": {
       "description": "CombinedStatus holds the combined state of several statuses for a single commit",
@@ -22422,7 +23028,7 @@
           "x-go-name": "URL"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "Comment": {
       "description": "Comment represents a comment on a commit or issue",
@@ -22487,7 +23093,7 @@
           "$ref": "#/definitions/User"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "Commit": {
       "type": "object",
@@ -22542,7 +23148,7 @@
           "x-go-name": "URL"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CommitAffectedFiles": {
       "description": "CommitAffectedFiles store information about files affected by the commit",
@@ -22559,7 +23165,7 @@
           "x-go-name": "Status"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CommitDateOptions": {
       "description": "CommitDateOptions store dates for GIT_AUTHOR_DATE and GIT_COMMITTER_DATE",
@@ -22576,7 +23182,7 @@
           "x-go-name": "Committer"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CommitMeta": {
       "type": "object",
@@ -22598,7 +23204,7 @@
           "x-go-name": "URL"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CommitStats": {
       "description": "CommitStats is statistics for a RepoCommit",
@@ -22623,7 +23229,7 @@
           "x-go-name": "Total"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CommitStatus": {
       "description": "CommitStatus holds a single status of a single Commit",
@@ -22683,7 +23289,7 @@
           "x-go-name": "URL"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CommitUser": {
       "type": "object",
@@ -22705,7 +23311,7 @@
           "x-go-name": "Name"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "Compare": {
       "type": "object",
@@ -22724,7 +23330,7 @@
           "x-go-name": "TotalCommits"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "ContentsExtResponse": {
       "type": "object",
@@ -22741,7 +23347,7 @@
           "$ref": "#/definitions/ContentsResponse"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "ContentsResponse": {
       "description": "ContentsResponse contains information about a repo's entry's (dir, file, symlink, submodule) metadata and content",
@@ -22848,7 +23454,7 @@
           "x-go-name": "URL"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CreateAccessTokenOption": {
       "description": "CreateAccessTokenOption options when create access token",
@@ -22880,7 +23486,7 @@
           ]
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CreateActionWorkflowDispatch": {
       "description": "CreateActionWorkflowDispatch represents the payload for triggering a workflow dispatch event",
@@ -22902,7 +23508,7 @@
           "example": "refs/heads/main"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CreateBranchProtectionOption": {
       "description": "CreateBranchProtectionOption options for creating a branch protection",
@@ -22943,6 +23549,20 @@
           "type": "string",
           "x-go-name": "BranchName"
         },
+        "bypass_allowlist_teams": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-go-name": "BypassAllowlistTeams"
+        },
+        "bypass_allowlist_usernames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-go-name": "BypassAllowlistUsernames"
+        },
         "dismiss_stale_approvals": {
           "type": "boolean",
           "x-go-name": "DismissStaleApprovals"
@@ -22950,6 +23570,10 @@
         "enable_approvals_whitelist": {
           "type": "boolean",
           "x-go-name": "EnableApprovalsWhitelist"
+        },
+        "enable_bypass_allowlist": {
+          "type": "boolean",
+          "x-go-name": "EnableBypassAllowlist"
         },
         "enable_force_push": {
           "type": "boolean",
@@ -23063,7 +23687,7 @@
           "x-go-name": "UnprotectedFilePatterns"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CreateBranchRepoOption": {
       "description": "CreateBranchRepoOption options when creating a branch in a repository",
@@ -23091,7 +23715,7 @@
           "x-go-name": "OldRefName"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CreateEmailOption": {
       "description": "CreateEmailOption options when creating email addresses",
@@ -23106,7 +23730,7 @@
           "x-go-name": "Emails"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CreateFileOptions": {
       "description": "CreateFileOptions options for creating a file\nNote: `author` and `committer` are optional (if only one is given, it will be used for the other, otherwise the authenticated user will be used)",
@@ -23155,7 +23779,7 @@
           "x-go-name": "Signoff"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CreateForkOption": {
       "description": "CreateForkOption options for creating a fork",
@@ -23172,7 +23796,7 @@
           "x-go-name": "Organization"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CreateGPGKeyOption": {
       "description": "CreateGPGKeyOption options create user GPG key",
@@ -23193,7 +23817,7 @@
           "x-go-name": "Signature"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CreateHookOption": {
       "description": "CreateHookOption options when create a hook",
@@ -23229,6 +23853,11 @@
           },
           "x-go-name": "Events"
         },
+        "name": {
+          "description": "Optional human-readable name for the webhook",
+          "type": "string",
+          "x-go-name": "Name"
+        },
         "type": {
           "type": "string",
           "enum": [
@@ -23246,7 +23875,7 @@
           "x-go-name": "Type"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CreateHookOptionConfig": {
       "description": "CreateHookOptionConfig has all config options in it\nrequired are \"content_type\" and \"url\" Required",
@@ -23254,7 +23883,7 @@
       "additionalProperties": {
         "type": "string"
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CreateIssueCommentOption": {
       "description": "CreateIssueCommentOption options for creating a comment on an issue",
@@ -23268,7 +23897,7 @@
           "x-go-name": "Body"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CreateIssueOption": {
       "description": "CreateIssueOption options to create one issue",
@@ -23317,6 +23946,15 @@
           "format": "int64",
           "x-go-name": "Milestone"
         },
+        "projects": {
+          "description": "list of project ids",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "x-go-name": "Projects"
+        },
         "ref": {
           "type": "string",
           "x-go-name": "Ref"
@@ -23326,7 +23964,7 @@
           "x-go-name": "Title"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CreateKeyOption": {
       "description": "CreateKeyOption options when creating a key",
@@ -23354,7 +23992,7 @@
           "x-go-name": "Title"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CreateLabelOption": {
       "description": "CreateLabelOption options for creating a label",
@@ -23389,7 +24027,7 @@
           "x-go-name": "Name"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CreateMilestoneOption": {
       "description": "CreateMilestoneOption options for creating a milestone",
@@ -23419,7 +24057,7 @@
           "x-go-name": "Title"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CreateOAuth2ApplicationOptions": {
       "description": "CreateOAuth2ApplicationOptions holds options to create an oauth2 application",
@@ -23449,7 +24087,7 @@
           "x-go-name": "SkipSecondaryAuthorization"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CreateOrUpdateSecretOption": {
       "description": "CreateOrUpdateSecretOption options when creating or updating secret",
@@ -23469,7 +24107,7 @@
           "x-go-name": "Description"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CreateOrgOption": {
       "description": "CreateOrgOption options for creating an organization",
@@ -23509,13 +24147,14 @@
           "x-go-name": "UserName"
         },
         "visibility": {
-          "description": "possible values are `public` (default), `limited` or `private`",
+          "description": "possible values are `public` (default), `limited` or `private`\npublic UserVisibilityPublic\nlimited UserVisibilityLimited\nprivate UserVisibilityPrivate",
           "type": "string",
           "enum": [
             "public",
             "limited",
             "private"
           ],
+          "x-go-enum-desc": "public UserVisibilityPublic\nlimited UserVisibilityLimited\nprivate UserVisibilityPrivate",
           "x-go-name": "Visibility"
         },
         "website": {
@@ -23524,7 +24163,7 @@
           "x-go-name": "Website"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CreatePullRequestOption": {
       "description": "CreatePullRequestOption options when creating a pull request",
@@ -23605,7 +24244,7 @@
           "x-go-name": "Title"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CreatePullReviewComment": {
       "description": "CreatePullReviewComment represent a review comment for creation api",
@@ -23633,7 +24272,18 @@
           "x-go-name": "Path"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
+    },
+    "CreatePullReviewCommentReplyOptions": {
+      "description": "CreatePullReviewCommentReplyOptions are options to reply to a pull request review comment",
+      "type": "object",
+      "properties": {
+        "body": {
+          "type": "string",
+          "x-go-name": "Body"
+        }
+      },
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CreatePullReviewOptions": {
       "description": "CreatePullReviewOptions are options to create a pull request review",
@@ -23655,10 +24305,19 @@
           "x-go-name": "CommitID"
         },
         "event": {
-          "$ref": "#/definitions/ReviewStateType"
+          "type": "string",
+          "enum": [
+            "APPROVED",
+            "PENDING",
+            "COMMENT",
+            "REQUEST_CHANGES",
+            "REQUEST_REVIEW"
+          ],
+          "x-go-enum-desc": "APPROVED ReviewStateApproved  ReviewStateApproved pr is approved\nPENDING ReviewStatePending  ReviewStatePending pr state is pending\nCOMMENT ReviewStateComment  ReviewStateComment is a comment review\nREQUEST_CHANGES ReviewStateRequestChanges  ReviewStateRequestChanges changes for pr are requested\nREQUEST_REVIEW ReviewStateRequestReview  ReviewStateRequestReview review is requested from user",
+          "x-go-name": "Event"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CreatePushMirrorOption": {
       "type": "object",
@@ -23690,7 +24349,7 @@
           "x-go-name": "SyncOnCommit"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CreateReleaseOption": {
       "description": "CreateReleaseOption options when creating a release",
@@ -23734,7 +24393,7 @@
           "x-go-name": "Target"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CreateRepoOption": {
       "description": "CreateRepoOption options when creating repository",
@@ -23780,12 +24439,13 @@
           "x-go-name": "Name"
         },
         "object_format_name": {
-          "description": "ObjectFormatName of the underlying git repository",
+          "description": "ObjectFormatName of the underlying git repository, empty string for default (sha1)\nsha1 ObjectFormatSHA1\nsha256 ObjectFormatSHA256",
           "type": "string",
           "enum": [
             "sha1",
             "sha256"
           ],
+          "x-go-enum-desc": "sha1 ObjectFormatSHA1\nsha256 ObjectFormatSHA256",
           "x-go-name": "ObjectFormatName"
         },
         "private": {
@@ -23815,7 +24475,7 @@
           "x-go-name": "TrustModel"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CreateStatusOption": {
       "description": "CreateStatusOption holds the information needed to create a new CommitStatus for a Commit",
@@ -23851,7 +24511,7 @@
           "x-go-name": "TargetURL"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CreateTagOption": {
       "description": "CreateTagOption options when creating a tag",
@@ -23875,7 +24535,7 @@
           "x-go-name": "Target"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CreateTagProtectionOption": {
       "description": "CreateTagProtectionOption options for creating a tag protection",
@@ -23903,7 +24563,7 @@
           "x-go-name": "WhitelistUsernames"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CreateTeamOption": {
       "description": "CreateTeamOption options for creating a team",
@@ -23938,6 +24598,7 @@
             "write",
             "admin"
           ],
+          "x-go-enum-desc": "read RepoWritePermissionRead\nwrite RepoWritePermissionWrite\nadmin RepoWritePermissionAdmin",
           "x-go-name": "Permission"
         },
         "units": {
@@ -23968,7 +24629,7 @@
           "example": "{\"repo.actions\",\"repo.packages\",\"repo.code\":\"read\",\"repo.issues\":\"write\",\"repo.ext_issues\":\"none\",\"repo.wiki\":\"admin\",\"repo.pulls\":\"owner\",\"repo.releases\":\"none\",\"repo.projects\":\"none\",\"repo.ext_wiki\":\"none\"}"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CreateUserOption": {
       "description": "CreateUserOption create user options",
@@ -24032,12 +24693,18 @@
           "x-go-name": "Username"
         },
         "visibility": {
-          "description": "User visibility level: public, limited, or private",
+          "description": "User visibility level: public, limited, or private\npublic UserVisibilityPublic\nlimited UserVisibilityLimited\nprivate UserVisibilityPrivate",
           "type": "string",
+          "enum": [
+            "public",
+            "limited",
+            "private"
+          ],
+          "x-go-enum-desc": "public UserVisibilityPublic\nlimited UserVisibilityLimited\nprivate UserVisibilityPrivate",
           "x-go-name": "Visibility"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CreateVariableOption": {
       "description": "CreateVariableOption the option when creating variable",
@@ -24057,7 +24724,7 @@
           "x-go-name": "Value"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "CreateWikiPageOptions": {
       "description": "CreateWikiPageOptions form for creating wiki",
@@ -24079,7 +24746,7 @@
           "x-go-name": "Title"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "Cron": {
       "description": "Cron represents a Cron task",
@@ -24114,7 +24781,7 @@
           "x-go-name": "Schedule"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "DeleteEmailOption": {
       "description": "DeleteEmailOption options when deleting email addresses",
@@ -24129,7 +24796,7 @@
           "x-go-name": "Emails"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "DeleteFileOptions": {
       "description": "DeleteFileOptions options for deleting a file\nNote: `author` and `committer` are optional (if only one is given, it will be used for the other, otherwise the authenticated user will be used)",
@@ -24178,7 +24845,7 @@
           "x-go-name": "Signoff"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "DeployKey": {
       "description": "DeployKey a deploy key",
@@ -24230,7 +24897,7 @@
           "x-go-name": "URL"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "DismissPullReviewOptions": {
       "description": "DismissPullReviewOptions are options to dismiss a pull request review",
@@ -24245,7 +24912,21 @@
           "x-go-name": "Priors"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
+    },
+    "EditActionRunnerOption": {
+      "type": "object",
+      "title": "EditActionRunnerOption represents the editable fields for a runner.",
+      "required": [
+        "disabled"
+      ],
+      "properties": {
+        "disabled": {
+          "type": "boolean",
+          "x-go-name": "Disabled"
+        }
+      },
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "EditAttachmentOptions": {
       "description": "EditAttachmentOptions options for editing attachments",
@@ -24257,7 +24938,7 @@
           "x-go-name": "Name"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "EditBranchProtectionOption": {
       "description": "EditBranchProtectionOption options for editing a branch protection",
@@ -24293,6 +24974,20 @@
           "type": "boolean",
           "x-go-name": "BlockOnRejectedReviews"
         },
+        "bypass_allowlist_teams": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-go-name": "BypassAllowlistTeams"
+        },
+        "bypass_allowlist_usernames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "x-go-name": "BypassAllowlistUsernames"
+        },
         "dismiss_stale_approvals": {
           "type": "boolean",
           "x-go-name": "DismissStaleApprovals"
@@ -24300,6 +24995,10 @@
         "enable_approvals_whitelist": {
           "type": "boolean",
           "x-go-name": "EnableApprovalsWhitelist"
+        },
+        "enable_bypass_allowlist": {
+          "type": "boolean",
+          "x-go-name": "EnableBypassAllowlist"
         },
         "enable_force_push": {
           "type": "boolean",
@@ -24409,7 +25108,7 @@
           "x-go-name": "UnprotectedFilePatterns"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "EditDeadlineOption": {
       "description": "EditDeadlineOption options for creating a deadline",
@@ -24424,7 +25123,7 @@
           "x-go-name": "Deadline"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "EditGitHookOption": {
       "description": "EditGitHookOption options when modifying one Git hook",
@@ -24436,7 +25135,7 @@
           "x-go-name": "Content"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "EditHookOption": {
       "description": "EditHookOption options when modify one hook",
@@ -24472,9 +25171,14 @@
             "type": "string"
           },
           "x-go-name": "Events"
+        },
+        "name": {
+          "description": "Optional human-readable name",
+          "type": "string",
+          "x-go-name": "Name"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "EditIssueCommentOption": {
       "description": "EditIssueCommentOption options for editing a comment",
@@ -24488,7 +25192,7 @@
           "x-go-name": "Body"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "EditIssueOption": {
       "description": "EditIssueOption options for editing an issue",
@@ -24510,6 +25214,12 @@
           "type": "string",
           "x-go-name": "Body"
         },
+        "content_version": {
+          "description": "The current version of the issue content to detect conflicts during editing",
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "ContentVersion"
+        },
         "due_date": {
           "type": "string",
           "format": "date-time",
@@ -24519,6 +25229,15 @@
           "type": "integer",
           "format": "int64",
           "x-go-name": "Milestone"
+        },
+        "projects": {
+          "description": "list of project ids to set (replaces existing projects)",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "x-go-name": "Projects"
         },
         "ref": {
           "type": "string",
@@ -24537,7 +25256,7 @@
           "x-go-name": "RemoveDeadline"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "EditLabelOption": {
       "description": "EditLabelOption options for editing a label",
@@ -24569,7 +25288,7 @@
           "x-go-name": "Name"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "EditMilestoneOption": {
       "description": "EditMilestoneOption options for editing a milestone",
@@ -24589,6 +25308,10 @@
         "state": {
           "description": "State indicates the updated state of the milestone",
           "type": "string",
+          "enum": [
+            "open",
+            "closed"
+          ],
           "x-go-name": "State"
         },
         "title": {
@@ -24597,7 +25320,7 @@
           "x-go-name": "Title"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "EditOrgOption": {
       "description": "EditOrgOption options for editing an organization",
@@ -24609,7 +25332,7 @@
           "x-go-name": "Description"
         },
         "email": {
-          "description": "The email address of the organization",
+          "description": "The email address of the organization; use empty string to clear",
           "type": "string",
           "x-go-name": "Email"
         },
@@ -24629,13 +25352,14 @@
           "x-go-name": "RepoAdminChangeTeamAccess"
         },
         "visibility": {
-          "description": "possible values are `public`, `limited` or `private`",
+          "description": "possible values are `public`, `limited` or `private`\npublic UserVisibilityPublic\nlimited UserVisibilityLimited\nprivate UserVisibilityPrivate",
           "type": "string",
           "enum": [
             "public",
             "limited",
             "private"
           ],
+          "x-go-enum-desc": "public UserVisibilityPublic\nlimited UserVisibilityLimited\nprivate UserVisibilityPrivate",
           "x-go-name": "Visibility"
         },
         "website": {
@@ -24644,7 +25368,7 @@
           "x-go-name": "Website"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "EditPullRequestOption": {
       "description": "EditPullRequestOption options when modify pull request",
@@ -24677,6 +25401,12 @@
           "description": "The new description body for the pull request",
           "type": "string",
           "x-go-name": "Body"
+        },
+        "content_version": {
+          "description": "The current version of the pull request content to detect conflicts during editing",
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "ContentVersion"
         },
         "due_date": {
           "type": "string",
@@ -24714,7 +25444,7 @@
           "x-go-name": "RemoveDeadline"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "EditReactionOption": {
       "description": "EditReactionOption contain the reaction type",
@@ -24726,7 +25456,7 @@
           "x-go-name": "Reaction"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "EditReleaseOption": {
       "description": "EditReleaseOption options when editing a release",
@@ -24763,7 +25493,7 @@
           "x-go-name": "Target"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "EditRepoOption": {
       "description": "EditRepoOption options when editing a repository's properties",
@@ -24783,6 +25513,11 @@
           "description": "either `true` to allow merging pull requests with a merge commit, or `false` to prevent merging pull requests with merge commits.",
           "type": "boolean",
           "x-go-name": "AllowMerge"
+        },
+        "allow_merge_update": {
+          "description": "either `true` to allow updating pull request branch by merge, or `false` to prevent it.",
+          "type": "boolean",
+          "x-go-name": "AllowMergeUpdate"
         },
         "allow_rebase": {
           "description": "either `true` to allow rebase-merging pull requests, or `false` to prevent rebase-merging.",
@@ -24833,6 +25568,11 @@
           "description": "set to a merge style to be used by this repository: \"merge\", \"rebase\", \"rebase-merge\", \"squash\", or \"fast-forward-only\".",
           "type": "string",
           "x-go-name": "DefaultMergeStyle"
+        },
+        "default_update_style": {
+          "description": "set to an update style to be used by this repository: \"merge\" or \"rebase\".",
+          "type": "string",
+          "x-go-name": "DefaultUpdateStyle"
         },
         "description": {
           "description": "a short description of the repository.",
@@ -24903,6 +25643,21 @@
           "type": "string",
           "x-go-name": "MirrorInterval"
         },
+        "mirror_password": {
+          "description": "authentication password for the remote repository (mirrors)",
+          "type": "string",
+          "x-go-name": "MirrorPassword"
+        },
+        "mirror_token": {
+          "description": "authentication token for the remote repository (mirrors)",
+          "type": "string",
+          "x-go-name": "MirrorToken"
+        },
+        "mirror_username": {
+          "description": "authentication username for the remote repository (mirrors)",
+          "type": "string",
+          "x-go-name": "MirrorUsername"
+        },
         "name": {
           "description": "name of the repository",
           "type": "string",
@@ -24930,7 +25685,7 @@
           "x-go-name": "Website"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "EditTagProtectionOption": {
       "description": "EditTagProtectionOption options for editing a tag protection",
@@ -24958,7 +25713,7 @@
           "x-go-name": "WhitelistUsernames"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "EditTeamOption": {
       "description": "EditTeamOption options for editing a team",
@@ -24993,6 +25748,7 @@
             "write",
             "admin"
           ],
+          "x-go-enum-desc": "read RepoWritePermissionRead\nwrite RepoWritePermissionWrite\nadmin RepoWritePermissionAdmin",
           "x-go-name": "Permission"
         },
         "units": {
@@ -25030,7 +25786,7 @@
           }
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "EditUserOption": {
       "description": "EditUserOption edit user options",
@@ -25123,8 +25879,14 @@
           "x-go-name": "SourceID"
         },
         "visibility": {
-          "description": "User visibility level: public, limited, or private",
+          "description": "User visibility level: public, limited, or private\npublic UserVisibilityPublic\nlimited UserVisibilityLimited\nprivate UserVisibilityPrivate",
           "type": "string",
+          "enum": [
+            "public",
+            "limited",
+            "private"
+          ],
+          "x-go-enum-desc": "public UserVisibilityPublic\nlimited UserVisibilityLimited\nprivate UserVisibilityPrivate",
           "x-go-name": "Visibility"
         },
         "website": {
@@ -25133,7 +25895,7 @@
           "x-go-name": "Website"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "Email": {
       "description": "Email an email address belonging to a user",
@@ -25166,7 +25928,7 @@
           "x-go-name": "Verified"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "ExternalTracker": {
       "description": "ExternalTracker represents settings for external tracker",
@@ -25193,7 +25955,7 @@
           "x-go-name": "ExternalTrackerURL"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "ExternalWiki": {
       "description": "ExternalWiki represents setting for external wiki",
@@ -25205,7 +25967,7 @@
           "x-go-name": "ExternalWikiURL"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "FileCommitResponse": {
       "type": "object",
@@ -25254,7 +26016,7 @@
           "x-go-name": "URL"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "FileDeleteResponse": {
       "description": "FileDeleteResponse contains information about a repo's file that was deleted",
@@ -25271,7 +26033,7 @@
           "$ref": "#/definitions/PayloadCommitVerification"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "FileLinksResponse": {
       "description": "FileLinksResponse contains the links for a repo's file",
@@ -25293,7 +26055,7 @@
           "x-go-name": "Self"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "FileResponse": {
       "description": "FileResponse contains information about a repo's file",
@@ -25309,7 +26071,7 @@
           "$ref": "#/definitions/PayloadCommitVerification"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "FilesResponse": {
       "description": "FilesResponse contains information about multiple files from a repo",
@@ -25330,7 +26092,7 @@
           "$ref": "#/definitions/PayloadCommitVerification"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "GPGKey": {
       "description": "GPGKey a user GPG key to sign commit and tag in repository",
@@ -25409,7 +26171,7 @@
           "x-go-name": "Verified"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "GPGKeyEmail": {
       "description": "GPGKeyEmail an email attached to a GPGKey",
@@ -25426,7 +26188,7 @@
           "x-go-name": "Verified"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "GeneralAPISettings": {
       "description": "GeneralAPISettings contains global api settings exposed by it",
@@ -25463,7 +26225,7 @@
           "x-go-name": "MaxResponseItems"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "GeneralAttachmentSettings": {
       "description": "GeneralAttachmentSettings contains global Attachment settings exposed by API",
@@ -25492,7 +26254,7 @@
           "x-go-name": "MaxSize"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "GeneralRepoSettings": {
       "description": "GeneralRepoSettings contains global repository settings exposed by API",
@@ -25529,7 +26291,7 @@
           "x-go-name": "TimeTrackingDisabled"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "GeneralUISettings": {
       "description": "GeneralUISettings contains global ui settings exposed by API",
@@ -25557,7 +26319,7 @@
           "x-go-name": "DefaultTheme"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "GenerateRepoOption": {
       "description": "GenerateRepoOption options when creating a repository using a template",
@@ -25628,7 +26390,7 @@
           "x-go-name": "Webhooks"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "GetFilesOptions": {
       "description": "GetFilesOptions options for retrieving metadate and content of multiple files",
@@ -25643,7 +26405,7 @@
           "x-go-name": "Files"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "GitBlobResponse": {
       "description": "GitBlobResponse represents a git blob",
@@ -25687,7 +26449,7 @@
           "x-go-name": "URL"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "GitEntry": {
       "description": "GitEntry represents a git tree",
@@ -25725,7 +26487,7 @@
           "x-go-name": "URL"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "GitHook": {
       "description": "GitHook represents a Git repository hook",
@@ -25747,7 +26509,7 @@
           "x-go-name": "Name"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "GitObject": {
       "type": "object",
@@ -25769,7 +26531,7 @@
           "x-go-name": "URL"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "GitTreeResponse": {
       "description": "GitTreeResponse returns a git tree",
@@ -25811,7 +26573,7 @@
           "x-go-name": "URL"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "GitignoreTemplateInfo": {
       "description": "GitignoreTemplateInfo name and text of a gitignore template",
@@ -25828,7 +26590,7 @@
           "x-go-name": "Source"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "Hook": {
       "description": "Hook a hook is a web hook when one repository changed",
@@ -25876,6 +26638,11 @@
           "format": "int64",
           "x-go-name": "ID"
         },
+        "name": {
+          "description": "Optional human-readable name for the webhook",
+          "type": "string",
+          "x-go-name": "Name"
+        },
         "type": {
           "description": "The type of the webhook (e.g., gitea, slack, discord)",
           "type": "string",
@@ -25887,7 +26654,7 @@
           "x-go-name": "Updated"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "Identity": {
       "description": "Identity for a person's identity like an author or committer",
@@ -25904,7 +26671,7 @@
           "x-go-name": "Name"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "InternalTracker": {
       "description": "InternalTracker represents settings for internal tracker",
@@ -25926,7 +26693,7 @@
           "x-go-name": "EnableTimeTracker"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "Issue": {
       "description": "Issue represents an issue in a repository",
@@ -25962,6 +26729,12 @@
           "type": "integer",
           "format": "int64",
           "x-go-name": "Comments"
+        },
+        "content_version": {
+          "description": "The version of the issue content for optimistic locking",
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "ContentVersion"
         },
         "created_at": {
           "type": "string",
@@ -26015,6 +26788,13 @@
           "format": "int64",
           "x-go-name": "PinOrder"
         },
+        "projects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Project"
+          },
+          "x-go-name": "Projects"
+        },
         "pull_request": {
           "$ref": "#/definitions/PullRequestMeta"
         },
@@ -26026,7 +26806,13 @@
           "$ref": "#/definitions/RepositoryMeta"
         },
         "state": {
-          "$ref": "#/definitions/StateType"
+          "type": "string",
+          "enum": [
+            "open",
+            "closed"
+          ],
+          "x-go-enum-desc": "open StateOpen  StateOpen pr is opened\nclosed StateClosed  StateClosed pr is closed",
+          "x-go-name": "State"
         },
         "time_estimate": {
           "type": "integer",
@@ -26050,7 +26836,7 @@
           "$ref": "#/definitions/User"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "IssueConfig": {
       "type": "object",
@@ -26067,7 +26853,7 @@
           "x-go-name": "ContactLinks"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "IssueConfigContactLink": {
       "type": "object",
@@ -26085,7 +26871,7 @@
           "x-go-name": "URL"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "IssueConfigValidation": {
       "type": "object",
@@ -26099,7 +26885,7 @@
           "x-go-name": "Valid"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "IssueDeadline": {
       "description": "IssueDeadline represents an issue deadline",
@@ -26111,7 +26897,7 @@
           "x-go-name": "Deadline"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "IssueFormField": {
       "description": "IssueFormField represents a form field",
@@ -26127,7 +26913,16 @@
           "x-go-name": "ID"
         },
         "type": {
-          "$ref": "#/definitions/IssueFormFieldType"
+          "type": "string",
+          "enum": [
+            "markdown",
+            "textarea",
+            "input",
+            "dropdown",
+            "checkboxes"
+          ],
+          "x-go-enum-desc": "markdown IssueFormFieldTypeMarkdown\ntextarea IssueFormFieldTypeTextarea\ninput IssueFormFieldTypeInput\ndropdown IssueFormFieldTypeDropdown\ncheckboxes IssueFormFieldTypeCheckboxes",
+          "x-go-name": "Type"
         },
         "validations": {
           "type": "object",
@@ -26137,22 +26932,17 @@
         "visible": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/IssueFormFieldVisible"
+            "type": "string",
+            "enum": [
+              "form",
+              "content"
+            ],
+            "x-go-enum-desc": "form IssueFormFieldVisibleForm\ncontent IssueFormFieldVisibleContent"
           },
           "x-go-name": "Visible"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
-    },
-    "IssueFormFieldType": {
-      "type": "string",
-      "title": "IssueFormFieldType defines issue form field type, can be \"markdown\", \"textarea\", \"input\", \"dropdown\" or \"checkboxes\"",
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
-    },
-    "IssueFormFieldVisible": {
-      "description": "IssueFormFieldVisible defines issue form field visible",
-      "type": "string",
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "IssueLabelsOption": {
       "description": "IssueLabelsOption a collection of labels",
@@ -26165,7 +26955,7 @@
           "x-go-name": "Labels"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "IssueMeta": {
       "description": "IssueMeta basic issue information",
@@ -26186,7 +26976,7 @@
           "x-go-name": "Name"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "IssueTemplate": {
       "description": "IssueTemplate represents an issue template for a repository",
@@ -26230,14 +27020,14 @@
           "x-go-name": "Title"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "IssueTemplateStringSlice": {
       "type": "array",
       "items": {
         "type": "string"
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "Label": {
       "description": "Label a label to an issue or a pr",
@@ -26280,7 +27070,7 @@
           "x-go-name": "URL"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "LabelTemplate": {
       "description": "LabelTemplate info of a Label template",
@@ -26307,7 +27097,7 @@
           "x-go-name": "Name"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "LicenseTemplateInfo": {
       "description": "LicensesInfo contains information about a License",
@@ -26339,7 +27129,7 @@
           "x-go-name": "URL"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "LicensesTemplateListEntry": {
       "description": "LicensesListEntry is used for the API",
@@ -26361,7 +27151,7 @@
           "x-go-name": "URL"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "LockIssueOption": {
       "description": "LockIssueOption options to lock an issue",
@@ -26372,7 +27162,7 @@
           "x-go-name": "Reason"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "MarkdownOption": {
       "description": "MarkdownOption markdown options",
@@ -26395,7 +27185,7 @@
           "type": "boolean"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "MarkupOption": {
       "description": "MarkupOption markup options",
@@ -26422,16 +27212,20 @@
           "type": "boolean"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "MergePullRequestOption": {
       "description": "MergePullRequestForm form for merging Pull Request",
       "type": "object",
       "required": [
-        "Do"
+        "do"
       ],
       "properties": {
-        "Do": {
+        "delete_branch_after_merge": {
+          "type": "boolean",
+          "x-go-name": "DeleteBranchAfterMerge"
+        },
+        "do": {
           "type": "string",
           "enum": [
             "merge",
@@ -26440,20 +27234,8 @@
             "squash",
             "fast-forward-only",
             "manually-merged"
-          ]
-        },
-        "MergeCommitID": {
-          "type": "string"
-        },
-        "MergeMessageField": {
-          "type": "string"
-        },
-        "MergeTitleField": {
-          "type": "string"
-        },
-        "delete_branch_after_merge": {
-          "type": "boolean",
-          "x-go-name": "DeleteBranchAfterMerge"
+          ],
+          "x-go-name": "Do"
         },
         "force_merge": {
           "type": "boolean",
@@ -26463,13 +27245,25 @@
           "type": "string",
           "x-go-name": "HeadCommitID"
         },
+        "merge_commit_id": {
+          "type": "string",
+          "x-go-name": "MergeCommitID"
+        },
+        "merge_message_field": {
+          "type": "string",
+          "x-go-name": "MergeMessageField"
+        },
+        "merge_title_field": {
+          "type": "string",
+          "x-go-name": "MergeTitleField"
+        },
         "merge_when_checks_succeed": {
           "type": "boolean",
           "x-go-name": "MergeWhenChecksSucceed"
         }
       },
       "x-go-name": "MergePullRequestForm",
-      "x-go-package": "code.gitea.io/gitea/services/forms"
+      "x-go-package": "gitea.dev/services/forms"
     },
     "MergeUpstreamRequest": {
       "type": "object",
@@ -26483,7 +27277,7 @@
           "x-go-name": "FfOnly"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "MergeUpstreamResponse": {
       "type": "object",
@@ -26493,7 +27287,7 @@
           "x-go-name": "MergeStyle"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "MigrateRepoOptions": {
       "description": "MigrateRepoOptions options for migrating repository's\nthis is used to interact with api v1",
@@ -26606,7 +27400,7 @@
           "x-go-name": "Wiki"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "Milestone": {
       "description": "Milestone milestone is a collection of issues on one repository",
@@ -26651,7 +27445,14 @@
           "x-go-name": "OpenIssues"
         },
         "state": {
-          "$ref": "#/definitions/StateType"
+          "description": "State indicates if the milestone is open or closed\nopen StateOpen  StateOpen pr is opened\nclosed StateClosed  StateClosed pr is closed",
+          "type": "string",
+          "enum": [
+            "open",
+            "closed"
+          ],
+          "x-go-enum-desc": "open StateOpen  StateOpen pr is opened\nclosed StateClosed  StateClosed pr is closed",
+          "x-go-name": "State"
         },
         "title": {
           "description": "Title is the title of the milestone",
@@ -26664,7 +27465,7 @@
           "x-go-name": "Updated"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "NewIssuePinsAllowed": {
       "description": "NewIssuePinsAllowed represents an API response that says if new Issue Pins are allowed",
@@ -26679,7 +27480,7 @@
           "x-go-name": "PullRequests"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "NodeInfo": {
       "description": "NodeInfo contains standardized way of exposing metadata about a server running one of the distributed social networks",
@@ -26718,7 +27519,7 @@
           "x-go-name": "Version"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "NodeInfoServices": {
       "description": "NodeInfoServices contains the third party sites this server can connect to via their application API",
@@ -26741,7 +27542,7 @@
           "x-go-name": "Outbound"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "NodeInfoSoftware": {
       "description": "NodeInfoSoftware contains Metadata about server software in use",
@@ -26768,7 +27569,7 @@
           "x-go-name": "Version"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "NodeInfoUsage": {
       "description": "NodeInfoUsage contains usage statistics for this server",
@@ -26790,7 +27591,7 @@
           "$ref": "#/definitions/NodeInfoUsageUsers"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "NodeInfoUsageUsers": {
       "description": "NodeInfoUsageUsers contains statistics about the users of this server",
@@ -26815,7 +27616,7 @@
           "x-go-name": "Total"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "Note": {
       "description": "Note contains information related to a git note",
@@ -26830,7 +27631,7 @@
           "x-go-name": "Message"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "NotificationCount": {
       "description": "NotificationCount number of unread notifications",
@@ -26843,7 +27644,7 @@
           "x-go-name": "New"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "NotificationSubject": {
       "description": "NotificationSubject contains the notification subject (Issue/Pull/Commit)",
@@ -26865,7 +27666,15 @@
           "x-go-name": "LatestCommentURL"
         },
         "state": {
-          "$ref": "#/definitions/StateType"
+          "description": "State indicates the current state of the notification subject\nopen NotifySubjectStateOpen  NotifySubjectStateOpen is an open subject\nclosed NotifySubjectStateClosed  NotifySubjectStateClosed is a closed subject\nmerged NotifySubjectStateMerged  NotifySubjectStateMerged is a merged pull request",
+          "type": "string",
+          "enum": [
+            "open",
+            "closed",
+            "merged"
+          ],
+          "x-go-enum-desc": "open NotifySubjectStateOpen  NotifySubjectStateOpen is an open subject\nclosed NotifySubjectStateClosed  NotifySubjectStateClosed is a closed subject\nmerged NotifySubjectStateMerged  NotifySubjectStateMerged is a merged pull request",
+          "x-go-name": "State"
         },
         "title": {
           "description": "Title is the title of the notification subject",
@@ -26873,7 +27682,16 @@
           "x-go-name": "Title"
         },
         "type": {
-          "$ref": "#/definitions/NotifySubjectType"
+          "description": "Type indicates the type of the notification subject\nIssue NotifySubjectIssue  NotifySubjectIssue a issue is subject of an notification\nPull NotifySubjectPull  NotifySubjectPull a pull is subject of an notification\nCommit NotifySubjectCommit  NotifySubjectCommit a commit is subject of an notification\nRepository NotifySubjectRepository  NotifySubjectRepository a repository is subject of an notification",
+          "type": "string",
+          "enum": [
+            "Issue",
+            "Pull",
+            "Commit",
+            "Repository"
+          ],
+          "x-go-enum-desc": "Issue NotifySubjectIssue  NotifySubjectIssue a issue is subject of an notification\nPull NotifySubjectPull  NotifySubjectPull a pull is subject of an notification\nCommit NotifySubjectCommit  NotifySubjectCommit a commit is subject of an notification\nRepository NotifySubjectRepository  NotifySubjectRepository a repository is subject of an notification",
+          "x-go-name": "Type"
         },
         "url": {
           "description": "URL is the API URL for the notification subject",
@@ -26881,7 +27699,7 @@
           "x-go-name": "URL"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "NotificationThread": {
       "description": "NotificationThread expose Notification on API",
@@ -26921,12 +27739,7 @@
           "x-go-name": "URL"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
-    },
-    "NotifySubjectType": {
-      "description": "NotifySubjectType represent type of notification subject",
-      "type": "string",
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "OAuth2Application": {
       "type": "object",
@@ -26978,7 +27791,7 @@
           "x-go-name": "SkipSecondaryAuthorization"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "Organization": {
       "description": "Organization represents an organization",
@@ -27031,8 +27844,14 @@
           "x-go-name": "UserName"
         },
         "visibility": {
-          "description": "The visibility level of the organization (public, limited, private)",
+          "description": "The visibility level of the organization (public, limited, private)\npublic UserVisibilityPublic\nlimited UserVisibilityLimited\nprivate UserVisibilityPrivate",
           "type": "string",
+          "enum": [
+            "public",
+            "limited",
+            "private"
+          ],
+          "x-go-enum-desc": "public UserVisibilityPublic\nlimited UserVisibilityLimited\nprivate UserVisibilityPrivate",
           "x-go-name": "Visibility"
         },
         "website": {
@@ -27041,7 +27860,7 @@
           "x-go-name": "Website"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "OrganizationPermissions": {
       "description": "OrganizationPermissions list different users permissions on an organization",
@@ -27073,7 +27892,7 @@
           "x-go-name": "IsOwner"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "PRBranchInfo": {
       "description": "PRBranchInfo information about a branch",
@@ -27104,7 +27923,7 @@
           "x-go-name": "Sha"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "Package": {
       "description": "Package represents a package",
@@ -27151,7 +27970,7 @@
           "x-go-name": "Version"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "PackageFile": {
       "description": "PackageFile represents a package file",
@@ -27195,7 +28014,7 @@
           "x-go-name": "Size"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "PayloadCommit": {
       "description": "PayloadCommit represents a commit",
@@ -27255,7 +28074,7 @@
           "$ref": "#/definitions/PayloadCommitVerification"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "PayloadCommitVerification": {
       "description": "PayloadCommitVerification represents the GPG verification of a commit",
@@ -27285,7 +28104,7 @@
           "x-go-name": "Verified"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "PayloadUser": {
       "description": "PayloadUser represents the author or committer of a commit",
@@ -27307,7 +28126,7 @@
           "x-go-name": "UserName"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "Permission": {
       "description": "Permission represents a set of permissions",
@@ -27326,7 +28145,68 @@
           "x-go-name": "Push"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
+    },
+    "Project": {
+      "description": "Project represents a project",
+      "type": "object",
+      "properties": {
+        "closed_at": {
+          "type": "string",
+          "format": "date-time",
+          "x-go-name": "Closed"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "x-go-name": "Created"
+        },
+        "creator_id": {
+          "description": "CreatorID is the user who created the project",
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "CreatorID"
+        },
+        "description": {
+          "description": "Description provides details about the project",
+          "type": "string",
+          "x-go-name": "Description"
+        },
+        "id": {
+          "description": "ID is the unique identifier for the project",
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "ID"
+        },
+        "is_closed": {
+          "description": "IsClosed indicates if the project is closed",
+          "type": "boolean",
+          "x-go-name": "IsClosed"
+        },
+        "owner_id": {
+          "description": "OwnerID is the owner of the project (for org-level projects)",
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "OwnerID"
+        },
+        "repo_id": {
+          "description": "RepoID is the repository this project belongs to (for repo-level projects)",
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "RepoID"
+        },
+        "title": {
+          "description": "Title is the title of the project",
+          "type": "string",
+          "x-go-name": "Title"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "x-go-name": "Updated"
+        }
+      },
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "PublicKey": {
       "description": "PublicKey publickey is a user key to push code to repository",
@@ -27383,7 +28263,7 @@
           "$ref": "#/definitions/User"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "PullRequest": {
       "description": "PullRequest represents a pull request",
@@ -27435,6 +28315,12 @@
           "type": "integer",
           "format": "int64",
           "x-go-name": "Comments"
+        },
+        "content_version": {
+          "description": "The version of the pull request content for optimistic locking",
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "ContentVersion"
         },
         "created_at": {
           "type": "string",
@@ -27560,7 +28446,14 @@
           "x-go-name": "ReviewComments"
         },
         "state": {
-          "$ref": "#/definitions/StateType"
+          "description": "The current state of the pull request\nopen StateOpen  StateOpen pr is opened\nclosed StateClosed  StateClosed pr is closed",
+          "type": "string",
+          "enum": [
+            "open",
+            "closed"
+          ],
+          "x-go-enum-desc": "open StateOpen  StateOpen pr is opened\nclosed StateClosed  StateClosed pr is closed",
+          "x-go-name": "State"
         },
         "title": {
           "description": "The title of the pull request",
@@ -27581,7 +28474,7 @@
           "$ref": "#/definitions/User"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "PullRequestMeta": {
       "description": "PullRequestMeta PR info if an issue is a PR",
@@ -27605,7 +28498,7 @@
           "x-go-name": "Merged"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "PullReview": {
       "description": "PullReview represents a pull request review",
@@ -27652,7 +28545,16 @@
           "x-go-name": "Stale"
         },
         "state": {
-          "$ref": "#/definitions/ReviewStateType"
+          "type": "string",
+          "enum": [
+            "APPROVED",
+            "PENDING",
+            "COMMENT",
+            "REQUEST_CHANGES",
+            "REQUEST_REVIEW"
+          ],
+          "x-go-enum-desc": "APPROVED ReviewStateApproved  ReviewStateApproved pr is approved\nPENDING ReviewStatePending  ReviewStatePending pr state is pending\nCOMMENT ReviewStateComment  ReviewStateComment is a comment review\nREQUEST_CHANGES ReviewStateRequestChanges  ReviewStateRequestChanges changes for pr are requested\nREQUEST_REVIEW ReviewStateRequestReview  ReviewStateRequestReview review is requested from user",
+          "x-go-name": "State"
         },
         "submitted_at": {
           "type": "string",
@@ -27671,7 +28573,7 @@
           "$ref": "#/definitions/User"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "PullReviewComment": {
       "description": "PullReviewComment represents a comment on a pull request review",
@@ -27742,7 +28644,7 @@
           "$ref": "#/definitions/User"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "PullReviewRequestOptions": {
       "description": "PullReviewRequestOptions are options to add or remove pull request review requests",
@@ -27763,7 +28665,7 @@
           "x-go-name": "TeamReviewers"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "PushMirror": {
       "description": "PushMirror represents information of a push mirror",
@@ -27810,7 +28712,7 @@
           "x-go-name": "SyncOnCommit"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "Reaction": {
       "description": "Reaction contain one reaction",
@@ -27830,7 +28732,7 @@
           "$ref": "#/definitions/User"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "Reference": {
       "type": "object",
@@ -27850,7 +28752,7 @@
           "x-go-name": "URL"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "Release": {
       "description": "Release represents a repository release",
@@ -27939,7 +28841,7 @@
           "x-go-name": "ZipURL"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "RenameBranchRepoOption": {
       "description": "RenameBranchRepoOption options when renaming a branch in a repository",
@@ -27955,7 +28857,7 @@
           "x-go-name": "Name"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "RenameOrgOption": {
       "description": "RenameOrgOption options when renaming an organization",
@@ -27971,7 +28873,7 @@
           "x-go-name": "NewName"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "RenameUserOption": {
       "description": "RenameUserOption options when renaming a user",
@@ -27987,15 +28889,23 @@
           "x-go-name": "NewName"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "RepoCollaboratorPermission": {
       "description": "RepoCollaboratorPermission to get repository permission for a collaborator",
       "type": "object",
       "properties": {
         "permission": {
-          "description": "Permission level of the collaborator",
+          "description": "Permission level of the collaborator\nnone AccessLevelNameNone\nread AccessLevelNameRead\nwrite AccessLevelNameWrite\nadmin AccessLevelNameAdmin\nowner AccessLevelNameOwner",
           "type": "string",
+          "enum": [
+            "none",
+            "read",
+            "write",
+            "admin",
+            "owner"
+          ],
+          "x-go-enum-desc": "none AccessLevelNameNone\nread AccessLevelNameRead\nwrite AccessLevelNameWrite\nadmin AccessLevelNameAdmin\nowner AccessLevelNameOwner",
           "x-go-name": "Permission"
         },
         "role_name": {
@@ -28007,7 +28917,7 @@
           "$ref": "#/definitions/User"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "RepoCommit": {
       "type": "object",
@@ -28036,7 +28946,7 @@
           "$ref": "#/definitions/PayloadCommitVerification"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "RepoTopicOptions": {
       "description": "RepoTopicOptions a collection of repo topic names",
@@ -28051,7 +28961,7 @@
           "x-go-name": "Topics"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "RepoTransfer": {
       "description": "RepoTransfer represents a pending repo transfer",
@@ -28071,7 +28981,7 @@
           "x-go-name": "Teams"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "Repository": {
       "description": "Repository represents a repository",
@@ -28088,6 +28998,10 @@
         "allow_merge_commits": {
           "type": "boolean",
           "x-go-name": "AllowMerge"
+        },
+        "allow_merge_update": {
+          "type": "boolean",
+          "x-go-name": "AllowMergeUpdate"
         },
         "allow_rebase": {
           "type": "boolean",
@@ -28122,6 +29036,11 @@
           "type": "string",
           "x-go-name": "AvatarURL"
         },
+        "branch_count": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "BranchCount"
+        },
         "clone_url": {
           "type": "string",
           "x-go-name": "CloneURL"
@@ -28150,6 +29069,10 @@
         "default_target_branch": {
           "type": "string",
           "x-go-name": "DefaultTargetBranch"
+        },
+        "default_update_style": {
+          "type": "string",
+          "x-go-name": "DefaultUpdateStyle"
         },
         "description": {
           "type": "string",
@@ -28257,6 +29180,11 @@
           "type": "string",
           "x-go-name": "MirrorInterval"
         },
+        "mirror_last_sync_at": {
+          "type": "string",
+          "format": "date-time",
+          "x-go-name": "MirrorLastSyncAt"
+        },
         "mirror_updated": {
           "type": "string",
           "format": "date-time",
@@ -28267,12 +29195,13 @@
           "x-go-name": "Name"
         },
         "object_format_name": {
-          "description": "ObjectFormatName of the underlying git repository",
+          "description": "ObjectFormatName of the underlying git repository\nsha1 ObjectFormatSHA1\nsha256 ObjectFormatSHA256",
           "type": "string",
           "enum": [
             "sha1",
             "sha256"
           ],
+          "x-go-enum-desc": "sha1 ObjectFormatSHA1\nsha256 ObjectFormatSHA256",
           "x-go-name": "ObjectFormatName"
         },
         "open_issues_count": {
@@ -28358,7 +29287,7 @@
           "x-go-name": "Website"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "RepositoryMeta": {
       "description": "RepositoryMeta basic repository information",
@@ -28382,12 +29311,27 @@
           "x-go-name": "Owner"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
-    "ReviewStateType": {
-      "description": "ReviewStateType review state type",
-      "type": "string",
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+    "RunDetails": {
+      "description": "RunDetails returns workflow_dispatch runid and url",
+      "type": "object",
+      "properties": {
+        "html_url": {
+          "type": "string",
+          "x-go-name": "HTMLURL"
+        },
+        "run_url": {
+          "type": "string",
+          "x-go-name": "RunURL"
+        },
+        "workflow_run_id": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "WorkflowRunID"
+        }
+      },
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "SearchResults": {
       "description": "SearchResults results of a successful search",
@@ -28407,7 +29351,7 @@
           "x-go-name": "OK"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "Secret": {
       "description": "Secret represents a secret",
@@ -28429,7 +29373,7 @@
           "x-go-name": "Name"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "ServerVersion": {
       "description": "ServerVersion wraps the version of the server",
@@ -28441,12 +29385,7 @@
           "x-go-name": "Version"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
-    },
-    "StateType": {
-      "description": "StateType issue state type",
-      "type": "string",
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "StopWatch": {
       "description": "StopWatch represent a running stopwatch",
@@ -28490,7 +29429,7 @@
           "x-go-name": "Seconds"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "SubmitPullReviewOptions": {
       "description": "SubmitPullReviewOptions are options to submit a pending pull request review",
@@ -28501,10 +29440,19 @@
           "x-go-name": "Body"
         },
         "event": {
-          "$ref": "#/definitions/ReviewStateType"
+          "type": "string",
+          "enum": [
+            "APPROVED",
+            "PENDING",
+            "COMMENT",
+            "REQUEST_CHANGES",
+            "REQUEST_REVIEW"
+          ],
+          "x-go-enum-desc": "APPROVED ReviewStateApproved  ReviewStateApproved pr is approved\nPENDING ReviewStatePending  ReviewStatePending pr state is pending\nCOMMENT ReviewStateComment  ReviewStateComment is a comment review\nREQUEST_CHANGES ReviewStateRequestChanges  ReviewStateRequestChanges changes for pr are requested\nREQUEST_REVIEW ReviewStateRequestReview  ReviewStateRequestReview review is requested from user",
+          "x-go-name": "Event"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "Tag": {
       "description": "Tag represents a repository tag",
@@ -28539,7 +29487,7 @@
           "x-go-name": "ZipballURL"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "TagProtection": {
       "description": "TagProtection represents a tag protection",
@@ -28583,7 +29531,7 @@
           "x-go-name": "WhitelistUsernames"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "Team": {
       "description": "Team represents a team in an organization",
@@ -28627,6 +29575,7 @@
             "admin",
             "owner"
           ],
+          "x-go-enum-desc": "none AccessLevelNameNone\nread AccessLevelNameRead\nwrite AccessLevelNameWrite\nadmin AccessLevelNameAdmin\nowner AccessLevelNameOwner",
           "x-go-name": "Permission"
         },
         "units": {
@@ -28664,13 +29613,13 @@
           }
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "TimeStamp": {
       "description": "TimeStamp defines a timestamp",
       "type": "integer",
       "format": "int64",
-      "x-go-package": "code.gitea.io/gitea/modules/timeutil"
+      "x-go-package": "gitea.dev/modules/timeutil"
     },
     "TimelineComment": {
       "description": "TimelineComment represents a timeline comment (comment of any type) on a commit or issue",
@@ -28796,7 +29745,7 @@
           "$ref": "#/definitions/User"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "TopicName": {
       "description": "TopicName a list of repo topic names",
@@ -28811,7 +29760,7 @@
           "x-go-name": "TopicNames"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "TopicResponse": {
       "description": "TopicResponse for returning topics",
@@ -28847,7 +29796,7 @@
           "x-go-name": "Updated"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "TrackedTime": {
       "description": "TrackedTime worked time for an issue / pr",
@@ -28891,7 +29840,7 @@
           "x-go-name": "UserName"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "TransferRepoOption": {
       "description": "TransferRepoOption options when transfer a repository's ownership",
@@ -28914,7 +29863,7 @@
           "x-go-name": "TeamIDs"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "UpdateBranchProtectionPriories": {
       "description": "UpdateBranchProtectionPriories a list to update the branch protection rule priorities",
@@ -28929,7 +29878,7 @@
           "x-go-name": "IDs"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "UpdateBranchRepoOption": {
       "description": "UpdateBranchRepoOption options when updating a branch reference in a repository",
@@ -28954,7 +29903,7 @@
           "x-go-name": "OldCommitID"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "UpdateFileOptions": {
       "description": "UpdateFileOptions options for updating or creating a file\nNote: `author` and `committer` are optional (if only one is given, it will be used for the other, otherwise the authenticated user will be used)",
@@ -29013,7 +29962,7 @@
           "x-go-name": "Signoff"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "UpdateRepoAvatarOption": {
       "description": "UpdateRepoAvatarUserOption options when updating the repo avatar",
@@ -29025,7 +29974,7 @@
           "x-go-name": "Image"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "UpdateUserAvatarOption": {
       "description": "UpdateUserAvatarUserOption options when updating the user avatar",
@@ -29037,7 +29986,7 @@
           "x-go-name": "Image"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "UpdateVariableOption": {
       "description": "UpdateVariableOption the option when updating variable",
@@ -29062,7 +30011,7 @@
           "x-go-name": "Value"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "User": {
       "description": "User represents a user",
@@ -29173,8 +30122,14 @@
           "x-go-name": "StarredRepos"
         },
         "visibility": {
-          "description": "User visibility level option: public, limited, private",
+          "description": "User visibility level option: public, limited, private\npublic UserVisibilityPublic\nlimited UserVisibilityLimited\nprivate UserVisibilityPrivate",
           "type": "string",
+          "enum": [
+            "public",
+            "limited",
+            "private"
+          ],
+          "x-go-enum-desc": "public UserVisibilityPublic\nlimited UserVisibilityLimited\nprivate UserVisibilityPrivate",
           "x-go-name": "Visibility"
         },
         "website": {
@@ -29183,7 +30138,7 @@
           "x-go-name": "Website"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "UserBadgeOption": {
       "description": "UserBadgeOption options for link between users and badges",
@@ -29201,7 +30156,7 @@
           ]
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "UserHeatmapData": {
       "description": "UserHeatmapData represents the data needed to create a heatmap",
@@ -29216,7 +30171,7 @@
           "$ref": "#/definitions/TimeStamp"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/models/activities"
+      "x-go-package": "gitea.dev/models/activities"
     },
     "UserSettings": {
       "description": "UserSettings represents user settings",
@@ -29260,7 +30215,7 @@
           "x-go-name": "Website"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "UserSettingsOptions": {
       "description": "UserSettingsOptions represents options to change user settings",
@@ -29304,7 +30259,7 @@
           "x-go-name": "Website"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "WatchInfo": {
       "description": "WatchInfo represents an API watch status of one repository",
@@ -29341,7 +30296,7 @@
           "x-go-name": "URL"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "WikiCommit": {
       "description": "WikiCommit page commit/revision",
@@ -29364,7 +30319,7 @@
           "x-go-name": "ID"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "WikiCommitList": {
       "description": "WikiCommitList commit/revision list",
@@ -29385,7 +30340,7 @@
           "x-go-name": "Count"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "WikiPage": {
       "description": "WikiPage a wiki page",
@@ -29431,7 +30386,7 @@
           "x-go-name": "Title"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     },
     "WikiPageMetaData": {
       "description": "WikiPageMetaData wiki page meta information",
@@ -29456,7 +30411,7 @@
           "x-go-name": "Title"
         }
       },
-      "x-go-package": "code.gitea.io/gitea/modules/structs"
+      "x-go-package": "gitea.dev/modules/structs"
     }
   },
   "responses": {
@@ -29500,12 +30455,6 @@
         "items": {
           "$ref": "#/definitions/Activity"
         }
-      }
-    },
-    "ActivityPub": {
-      "description": "ActivityPub",
-      "schema": {
-        "$ref": "#/definitions/ActivityPub"
       }
     },
     "AnnotatedTag": {
@@ -30266,6 +31215,12 @@
         "items": {
           "$ref": "#/definitions/Repository"
         }
+      }
+    },
+    "RunDetails": {
+      "description": "RunDetails",
+      "schema": {
+        "$ref": "#/definitions/RunDetails"
       }
     },
     "Runner": {

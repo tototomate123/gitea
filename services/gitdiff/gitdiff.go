@@ -18,27 +18,27 @@ import (
 	"strings"
 	"time"
 
-	"code.gitea.io/gitea/models/db"
-	git_model "code.gitea.io/gitea/models/git"
-	issues_model "code.gitea.io/gitea/models/issues"
-	pull_model "code.gitea.io/gitea/models/pull"
-	user_model "code.gitea.io/gitea/models/user"
-	"code.gitea.io/gitea/modules/analyze"
-	"code.gitea.io/gitea/modules/base"
-	"code.gitea.io/gitea/modules/charset"
-	"code.gitea.io/gitea/modules/git"
-	"code.gitea.io/gitea/modules/git/attribute"
-	"code.gitea.io/gitea/modules/git/gitcmd"
-	"code.gitea.io/gitea/modules/gitrepo"
-	"code.gitea.io/gitea/modules/highlight"
-	"code.gitea.io/gitea/modules/htmlutil"
-	"code.gitea.io/gitea/modules/lfs"
-	"code.gitea.io/gitea/modules/log"
-	"code.gitea.io/gitea/modules/optional"
-	"code.gitea.io/gitea/modules/setting"
-	"code.gitea.io/gitea/modules/svg"
-	"code.gitea.io/gitea/modules/translation"
-	"code.gitea.io/gitea/modules/util"
+	"gitea.dev/models/db"
+	git_model "gitea.dev/models/git"
+	issues_model "gitea.dev/models/issues"
+	pull_model "gitea.dev/models/pull"
+	user_model "gitea.dev/models/user"
+	"gitea.dev/modules/analyze"
+	"gitea.dev/modules/base"
+	"gitea.dev/modules/charset"
+	"gitea.dev/modules/git"
+	"gitea.dev/modules/git/attribute"
+	"gitea.dev/modules/git/gitcmd"
+	"gitea.dev/modules/gitrepo"
+	"gitea.dev/modules/highlight"
+	"gitea.dev/modules/htmlutil"
+	"gitea.dev/modules/lfs"
+	"gitea.dev/modules/log"
+	"gitea.dev/modules/optional"
+	"gitea.dev/modules/setting"
+	"gitea.dev/modules/svg"
+	"gitea.dev/modules/translation"
+	"gitea.dev/modules/util"
 
 	"github.com/alecthomas/chroma/v2"
 	"github.com/sergi/go-diff/diffmatchpatch"
@@ -228,7 +228,7 @@ func (d *DiffLine) RenderBlobExcerptButtons(fileNameHash string, data *DiffBlobE
 			link += fmt.Sprintf("&pull_issue_index=%d", data.PullIssueIndex)
 		}
 		return htmlutil.HTMLFormat(
-			`<button class="code-expander-button" hx-target="closest tr" hx-get="%s" data-hidden-comment-ids=",%s,">%s</button>`,
+			`<button class="code-expander-button" data-fetch-sync="$closest(tr)" data-fetch-url="%s" data-hidden-comment-ids=",%s,">%s</button>`,
 			link, dataHiddenCommentIDs, svg.RenderHTML(svgName),
 		)
 	}
@@ -1477,38 +1477,40 @@ func SyncUserSpecificDiff(ctx context.Context, userID int64, pull *issues_model.
 	if errIgnored != nil {
 		log.Error("Could not get changed files between %s and %s for pull request %d in repo with path %s. Assuming no changes. Error: %w", review.CommitSHA, latestCommit, pull.Index, gitRepo.Path, err)
 	}
+	changedFilesSet := make(map[string]struct{}, len(changedFiles))
+	for _, changedFile := range changedFiles {
+		changedFilesSet[changedFile] = struct{}{}
+	}
 
 	filesChangedSinceLastDiff := make(map[string]pull_model.ViewedState)
-outer:
 	for _, diffFile := range diff.Files {
-		fileViewedState := review.UpdatedFiles[diffFile.GetDiffFileName()]
-
-		// Check whether it was previously detected that the file has changed since the last review
-		if fileViewedState == pull_model.HasChanged {
-			diffFile.HasChangedSinceLastReview = true
-			continue
-		}
-
 		filename := diffFile.GetDiffFileName()
+		fileViewedState := review.UpdatedFiles[filename]
 
-		// Check explicitly whether the file has changed since the last review
-		for _, changedFile := range changedFiles {
-			diffFile.HasChangedSinceLastReview = filename == changedFile
-			if diffFile.HasChangedSinceLastReview {
-				filesChangedSinceLastDiff[filename] = pull_model.HasChanged
-				continue outer // We don't want to check if the file is viewed here as that would fold the file, which is in this case unwanted
-			}
-		}
-		// Check whether the file has already been viewed
-		if fileViewedState == pull_model.Viewed {
+		if fileViewedState == pull_model.HasChanged { // Check whether it was previously detected that the file has changed since the last review
+			diffFile.HasChangedSinceLastReview = true
+			delete(changedFilesSet, filename)
+		} else if _, ok := changedFilesSet[filename]; ok { // Check explicitly whether the file has changed since the last review
+			diffFile.HasChangedSinceLastReview = true
+			filesChangedSinceLastDiff[filename] = pull_model.HasChanged
+			delete(changedFilesSet, filename)
+		} else if fileViewedState == pull_model.Viewed { // Check whether the file has already been viewed
 			diffFile.IsViewed = true
+		}
+	}
+
+	// All changed files still present at this point aren't part of the diff anymore, this occurs
+	// when a file was modified in a previous commit of the diff and the modification got reverted afterwards.
+	// Marking the files as unviewed to prevent errors where a non-existing file has a view state
+	for changedFile := range changedFilesSet {
+		if _, ok := review.UpdatedFiles[changedFile]; ok {
+			filesChangedSinceLastDiff[changedFile] = pull_model.Unviewed
 		}
 	}
 
 	if len(filesChangedSinceLastDiff) > 0 {
 		// Explicitly store files that have changed in the database, if any is present at all.
 		// This has the benefit that the "Has Changed" attribute will be present as long as the user does not explicitly mark this file as viewed, so it will even survive a page reload after marking another file as viewed.
-		// On the other hand, this means that even if a commit reverting an unseen change is committed, the file will still be seen as changed.
 		updatedReview, err := pull_model.UpdateReviewState(ctx, review.UserID, review.PullID, review.CommitSHA, filesChangedSinceLastDiff)
 		if err != nil {
 			log.Warn("Could not update review for user %d, pull %d, commit %s and the changed files %v: %v", review.UserID, review.PullID, review.CommitSHA, filesChangedSinceLastDiff, err)
@@ -1594,10 +1596,10 @@ func generatePatchForUnchangedLineFromReader(reader io.Reader, treePath string, 
 
 	// Generate synthetic patch
 	var patchBuilder strings.Builder
-	patchBuilder.WriteString(fmt.Sprintf("diff --git a/%s b/%s\n", treePath, treePath))
-	patchBuilder.WriteString(fmt.Sprintf("--- a/%s\n", treePath))
-	patchBuilder.WriteString(fmt.Sprintf("+++ b/%s\n", treePath))
-	patchBuilder.WriteString(fmt.Sprintf("@@ -%d,%d +%d,%d @@\n", startLine, len(lines), startLine, len(lines)))
+	fmt.Fprintf(&patchBuilder, "diff --git a/%s b/%s\n", treePath, treePath)
+	fmt.Fprintf(&patchBuilder, "--- a/%s\n", treePath)
+	fmt.Fprintf(&patchBuilder, "+++ b/%s\n", treePath)
+	fmt.Fprintf(&patchBuilder, "@@ -%d,%d +%d,%d @@\n", startLine, len(lines), startLine, len(lines))
 
 	for _, lineContent := range lines {
 		patchBuilder.WriteString(" ")

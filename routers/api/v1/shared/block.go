@@ -7,12 +7,13 @@ import (
 	"errors"
 	"net/http"
 
-	user_model "code.gitea.io/gitea/models/user"
-	api "code.gitea.io/gitea/modules/structs"
-	"code.gitea.io/gitea/routers/api/v1/utils"
-	"code.gitea.io/gitea/services/context"
-	"code.gitea.io/gitea/services/convert"
-	user_service "code.gitea.io/gitea/services/user"
+	user_model "gitea.dev/models/user"
+	api "gitea.dev/modules/structs"
+	"gitea.dev/modules/util"
+	"gitea.dev/routers/api/v1/utils"
+	"gitea.dev/services/context"
+	"gitea.dev/services/convert"
+	user_service "gitea.dev/services/user"
 )
 
 func ListBlocks(ctx *context.APIContext, blocker *user_model.User) {
@@ -36,7 +37,7 @@ func ListBlocks(ctx *context.APIContext, blocker *user_model.User) {
 		users = append(users, convert.ToUser(ctx, b.Blockee, blocker))
 	}
 
-	ctx.SetLinkHeader(int(total), listOptions.PageSize)
+	ctx.SetLinkHeader(total, listOptions.PageSize)
 	ctx.SetTotalCountHeader(total)
 	ctx.JSON(http.StatusOK, &users)
 }
@@ -48,17 +49,14 @@ func CheckUserBlock(ctx *context.APIContext, blocker *user_model.User) {
 		return
 	}
 
-	status := http.StatusNotFound
-	blocking, err := user_model.GetBlocking(ctx, blocker.ID, blockee.ID)
-	if err != nil {
+	_, err = user_model.GetBlocking(ctx, blocker.ID, blockee.ID)
+	if errors.Is(err, util.ErrNotExist) {
+		ctx.Status(http.StatusNotFound)
+	} else if err == nil {
+		ctx.Status(http.StatusNoContent)
+	} else {
 		ctx.APIErrorInternal(err)
-		return
 	}
-	if blocking != nil {
-		status = http.StatusNoContent
-	}
-
-	ctx.Status(status)
 }
 
 func BlockUser(ctx *context.APIContext, blocker *user_model.User) {

@@ -16,27 +16,27 @@ import (
 	"strings"
 	"unicode"
 
-	"code.gitea.io/gitea/models/db"
-	git_model "code.gitea.io/gitea/models/git"
-	issues_model "code.gitea.io/gitea/models/issues"
-	access_model "code.gitea.io/gitea/models/perm/access"
-	pull_model "code.gitea.io/gitea/models/pull"
-	repo_model "code.gitea.io/gitea/models/repo"
-	"code.gitea.io/gitea/models/unit"
-	user_model "code.gitea.io/gitea/models/user"
-	"code.gitea.io/gitea/modules/cache"
-	"code.gitea.io/gitea/modules/git"
-	"code.gitea.io/gitea/modules/git/gitcmd"
-	"code.gitea.io/gitea/modules/globallock"
-	"code.gitea.io/gitea/modules/httplib"
-	"code.gitea.io/gitea/modules/log"
-	"code.gitea.io/gitea/modules/references"
-	repo_module "code.gitea.io/gitea/modules/repository"
-	"code.gitea.io/gitea/modules/setting"
-	"code.gitea.io/gitea/modules/timeutil"
-	"code.gitea.io/gitea/modules/util"
-	issue_service "code.gitea.io/gitea/services/issue"
-	notify_service "code.gitea.io/gitea/services/notify"
+	"gitea.dev/models/db"
+	git_model "gitea.dev/models/git"
+	issues_model "gitea.dev/models/issues"
+	access_model "gitea.dev/models/perm/access"
+	pull_model "gitea.dev/models/pull"
+	repo_model "gitea.dev/models/repo"
+	"gitea.dev/models/unit"
+	user_model "gitea.dev/models/user"
+	"gitea.dev/modules/cache"
+	"gitea.dev/modules/git"
+	"gitea.dev/modules/git/gitcmd"
+	"gitea.dev/modules/globallock"
+	"gitea.dev/modules/httplib"
+	"gitea.dev/modules/log"
+	"gitea.dev/modules/references"
+	repo_module "gitea.dev/modules/repository"
+	"gitea.dev/modules/setting"
+	"gitea.dev/modules/timeutil"
+	"gitea.dev/modules/util"
+	issue_service "gitea.dev/services/issue"
+	notify_service "gitea.dev/services/notify"
 )
 
 // getMergeMessage composes the message used when merging a pull request.
@@ -436,18 +436,22 @@ func doMergeAndPush(ctx context.Context, pr *issues_model.PullRequest, doer *use
 
 func commitAndSignNoAuthor(ctx *mergeContext, message string) error {
 	cmdCommit := gitcmd.NewCommand("commit").AddOptionFormat("--message=%s", message)
-	if ctx.signKey == nil {
-		cmdCommit.AddArguments("--no-gpg-sign")
-	} else {
-		if ctx.signKey.Format != "" {
-			cmdCommit.AddConfig("gpg.format", ctx.signKey.Format)
-		}
-		cmdCommit.AddOptionFormat("-S%s", ctx.signKey.KeyID)
-	}
+	addCommitSigningOptions(cmdCommit, ctx.signKey)
 	if err := ctx.PrepareGitCmd(cmdCommit).RunWithStderr(ctx); err != nil {
 		return fmt.Errorf("git commit %v: %w\n%s", ctx.pr, err, ctx.outbuf.String())
 	}
 	return nil
+}
+
+func addCommitSigningOptions(cmd *gitcmd.Command, signKey *git.SigningKey) {
+	if signKey == nil {
+		cmd.AddArguments("--no-gpg-sign")
+		return
+	}
+	if signKey.Format != "" {
+		cmd.AddConfig("gpg.format", signKey.Format)
+	}
+	cmd.AddOptionFormat("--gpg-sign=%s", signKey.KeyID)
 }
 
 // ErrMergeConflicts represents an error if merging fails with a conflict

@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"strings"
 
-	repo_model "code.gitea.io/gitea/models/repo"
-	"code.gitea.io/gitea/modules/git"
-	"code.gitea.io/gitea/modules/git/gitcmd"
-	"code.gitea.io/gitea/modules/gitrepo"
-	"code.gitea.io/gitea/modules/log"
+	repo_model "gitea.dev/models/repo"
+	"gitea.dev/modules/git"
+	"gitea.dev/modules/git/gitcmd"
+	"gitea.dev/modules/gitrepo"
+	"gitea.dev/modules/log"
 )
 
 // getRebaseAmendMessage composes the message to amend commits in rebase merge of a pull request.
@@ -74,10 +74,10 @@ func doMergeRebaseFastForward(ctx *mergeContext) error {
 	}
 
 	if newMessage != "" {
-		if err := gitcmd.NewCommand("commit", "--amend").
-			AddOptionFormat("--message=%s", newMessage).
-			WithDir(ctx.tmpBasePath).
-			Run(ctx); err != nil {
+		cmdCommit := gitcmd.NewCommand("commit", "--amend").
+			AddOptionFormat("--message=%s", newMessage)
+		addCommitSigningOptions(cmdCommit, ctx.signKey)
+		if err := cmdCommit.WithDir(ctx.tmpBasePath).Run(ctx); err != nil {
 			log.Error("Unable to amend commit message: %v", err)
 			return err
 		}

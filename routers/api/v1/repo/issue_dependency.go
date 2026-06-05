@@ -7,15 +7,15 @@ package repo
 import (
 	"net/http"
 
-	issues_model "code.gitea.io/gitea/models/issues"
-	access_model "code.gitea.io/gitea/models/perm/access"
-	repo_model "code.gitea.io/gitea/models/repo"
-	"code.gitea.io/gitea/modules/setting"
-	api "code.gitea.io/gitea/modules/structs"
-	"code.gitea.io/gitea/modules/web"
-	"code.gitea.io/gitea/routers/api/v1/utils"
-	"code.gitea.io/gitea/services/context"
-	"code.gitea.io/gitea/services/convert"
+	issues_model "gitea.dev/models/issues"
+	access_model "gitea.dev/models/perm/access"
+	repo_model "gitea.dev/models/repo"
+	"gitea.dev/modules/setting"
+	api "gitea.dev/modules/structs"
+	"gitea.dev/modules/web"
+	"gitea.dev/routers/api/v1/utils"
+	"gitea.dev/services/context"
+	"gitea.dev/services/convert"
 )
 
 // GetIssueDependencies list an issue's dependencies
@@ -81,7 +81,7 @@ func GetIssueDependencies(ctx *context.APIContext) {
 
 	canWrite := ctx.Repo.Permission.CanWriteIssuesOrPulls(issue.IsPull)
 
-	blockerIssues := make([]*issues_model.Issue, 0, listOptions.PageSize)
+	blockerIssues := make([]*issues_model.Issue, 0, min(listOptions.PageSize, setting.API.MaxResponseItems))
 
 	// 2. Get the issues this issue depends on, i.e. the `<#b>`: `<issue> <- <#b>`
 	blockersInfo, total, err := issue.BlockedByDependencies(ctx, listOptions)
@@ -102,7 +102,7 @@ func GetIssueDependencies(ctx *context.APIContext) {
 			perm = existPerm
 		} else {
 			var err error
-			perm, err = access_model.GetUserRepoPermission(ctx, &blocker.Repository, ctx.Doer)
+			perm, err = access_model.GetDoerRepoPermission(ctx, &blocker.Repository, ctx.Doer)
 			if err != nil {
 				ctx.APIErrorInternal(err)
 				return
@@ -140,7 +140,7 @@ func GetIssueDependencies(ctx *context.APIContext) {
 		}
 		blockerIssues = append(blockerIssues, &blocker.Issue)
 	}
-	ctx.SetLinkHeader(int(total), listOptions.PageSize)
+	ctx.SetLinkHeader(total, listOptions.PageSize)
 	ctx.SetTotalCountHeader(total)
 	ctx.JSON(http.StatusOK, convert.ToAPIIssueList(ctx, ctx.Doer, blockerIssues))
 }
@@ -351,7 +351,7 @@ func GetIssueBlocks(ctx *context.APIContext) {
 			perm = existPerm
 		} else {
 			var err error
-			perm, err = access_model.GetUserRepoPermission(ctx, &depMeta.Repository, ctx.Doer)
+			perm, err = access_model.GetDoerRepoPermission(ctx, &depMeta.Repository, ctx.Doer)
 			if err != nil {
 				ctx.APIErrorInternal(err)
 				return
@@ -537,7 +537,7 @@ func getPermissionForRepo(ctx *context.APIContext, repo *repo_model.Repository) 
 		return &ctx.Repo.Permission
 	}
 
-	perm, err := access_model.GetUserRepoPermission(ctx, repo, ctx.Doer)
+	perm, err := access_model.GetDoerRepoPermission(ctx, repo, ctx.Doer)
 	if err != nil {
 		ctx.APIErrorInternal(err)
 		return nil

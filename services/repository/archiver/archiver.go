@@ -12,20 +12,20 @@ import (
 	"strings"
 	"time"
 
-	"code.gitea.io/gitea/models/db"
-	repo_model "code.gitea.io/gitea/models/repo"
-	"code.gitea.io/gitea/modules/git"
-	"code.gitea.io/gitea/modules/git/gitcmd"
-	"code.gitea.io/gitea/modules/gitrepo"
-	"code.gitea.io/gitea/modules/graceful"
-	"code.gitea.io/gitea/modules/httplib"
-	"code.gitea.io/gitea/modules/log"
-	"code.gitea.io/gitea/modules/process"
-	"code.gitea.io/gitea/modules/queue"
-	"code.gitea.io/gitea/modules/setting"
-	"code.gitea.io/gitea/modules/storage"
-	"code.gitea.io/gitea/modules/util"
-	gitea_context "code.gitea.io/gitea/services/context"
+	"gitea.dev/models/db"
+	repo_model "gitea.dev/models/repo"
+	"gitea.dev/modules/git"
+	"gitea.dev/modules/git/gitcmd"
+	"gitea.dev/modules/gitrepo"
+	"gitea.dev/modules/graceful"
+	"gitea.dev/modules/httplib"
+	"gitea.dev/modules/log"
+	"gitea.dev/modules/process"
+	"gitea.dev/modules/queue"
+	"gitea.dev/modules/setting"
+	"gitea.dev/modules/storage"
+	"gitea.dev/modules/util"
+	gitea_context "gitea.dev/services/context"
 )
 
 // ArchiveRequest defines the parameters of an archive request, which notably
@@ -328,7 +328,7 @@ func ServeRepoArchive(ctx *gitea_context.Base, archiveReq *ArchiveRequest) error
 	if setting.Repository.StreamArchives || len(archiveReq.Paths) > 0 {
 		// the header must be set before starting streaming even an error would occur,
 		// because errors may happen in git command and such cases aren't in our control.
-		httplib.ServeSetHeaders(ctx.Resp, &httplib.ServeHeaderOptions{Filename: downloadName})
+		httplib.ServeSetHeaders(ctx.Resp, httplib.ServeHeaderOptions{Filename: downloadName})
 		if err := archiveReq.Stream(ctx, ctx.Resp); err != nil && !ctx.Written() {
 			if gitcmd.StderrHasPrefix(err, "fatal: pathspec") {
 				return util.NewInvalidArgumentErrorf("path doesn't exist or is invalid")
@@ -346,7 +346,7 @@ func ServeRepoArchive(ctx *gitea_context.Base, archiveReq *ArchiveRequest) error
 	rPath := archiver.RelativePath()
 	if setting.RepoArchive.Storage.ServeDirect() {
 		// If we have a signed url (S3, object storage), redirect to this directly.
-		u, err := storage.RepoArchives.URL(rPath, downloadName, ctx.Req.Method, nil)
+		u, err := storage.RepoArchives.ServeDirectURL(rPath, downloadName, ctx.Req.Method, nil)
 		if u != nil && err == nil {
 			ctx.Redirect(u.String())
 			return nil
@@ -359,7 +359,7 @@ func ServeRepoArchive(ctx *gitea_context.Base, archiveReq *ArchiveRequest) error
 	}
 	defer fr.Close()
 
-	ctx.ServeContent(fr, &gitea_context.ServeHeaderOptions{
+	ctx.ServeContent(fr, gitea_context.ServeHeaderOptions{
 		Filename:     downloadName,
 		LastModified: archiver.CreatedUnix.AsLocalTime(),
 	})

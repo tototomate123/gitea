@@ -8,10 +8,10 @@ import (
 	"net/http"
 	"strings"
 
-	user_model "code.gitea.io/gitea/models/user"
-	"code.gitea.io/gitea/modules/log"
-	"code.gitea.io/gitea/modules/optional"
-	"code.gitea.io/gitea/modules/setting"
+	user_model "gitea.dev/models/user"
+	"gitea.dev/modules/log"
+	"gitea.dev/modules/optional"
+	"gitea.dev/modules/setting"
 
 	gouuid "github.com/google/uuid"
 )
@@ -29,7 +29,9 @@ const ReverseProxyMethodName = "reverse_proxy"
 // On successful authentication the proxy is expected to populate the username in the
 // "setting.ReverseProxyAuthUser" header. Optionally it can also populate the email of the
 // user in the "setting.ReverseProxyAuthEmail" header.
-type ReverseProxy struct{}
+type ReverseProxy struct {
+	CreateSession bool
+}
 
 // getUserName extracts the username from the "setting.ReverseProxyAuthUser" header
 func (r *ReverseProxy) getUserName(req *http.Request) string {
@@ -115,9 +117,7 @@ func (r *ReverseProxy) Verify(req *http.Request, w http.ResponseWriter, store Da
 		}
 	}
 
-	// Make sure requests to API paths, attachment downloads, git and LFS do not create a new session
-	detector := newAuthPathDetector(req)
-	if !detector.isAPIPath() && !detector.isAttachmentDownload() && !detector.isGitRawOrAttachOrLFSPath() {
+	if r.CreateSession {
 		if sess != nil && (sess.Get("uid") == nil || sess.Get("uid").(int64) != user.ID) {
 			handleSignIn(w, req, sess, user)
 		}

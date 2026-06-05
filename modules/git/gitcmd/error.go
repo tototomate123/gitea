@@ -56,6 +56,14 @@ func StderrHasPrefix(err error, prefix string) bool {
 	return strings.HasPrefix(stderr, prefix)
 }
 
+func StderrContains(err error, sub string) bool {
+	stderr, ok := ErrorAsStderr(err)
+	if !ok {
+		return false
+	}
+	return strings.Contains(stderr, sub)
+}
+
 func IsErrorExitCode(err error, code int) bool {
 	var exitError *exec.ExitError
 	if errors.As(err, &exitError) {
@@ -75,6 +83,13 @@ func IsErrorCanceledOrKilled(err error) bool {
 	// - *exec.ExitError: "signal: killed"
 	// TODO: in the future, we need to use unified error type from gitcmd.Run to check whether it is manually canceled
 	return errors.Is(err, context.Canceled) || IsErrorSignalKilled(err)
+}
+
+func IsStdErrorNotValidObjectName(err error) bool {
+	stderr, ok := ErrorAsStderr(err)
+	// Git is lowercasing the "fatal: Not a valid object name" error message
+	// ref: https://lore.kernel.org/git/pull.2052.git.1771836302101.gitgitgadget@gmail.com
+	return ok && strings.Contains(strings.ToLower(stderr), "fatal: not a valid object name")
 }
 
 type pipelineError struct {

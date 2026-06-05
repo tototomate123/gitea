@@ -13,15 +13,16 @@ import (
 	"runtime"
 	"strings"
 
-	"code.gitea.io/gitea/modules/git/gitcmd"
-	"code.gitea.io/gitea/modules/log"
-	"code.gitea.io/gitea/modules/setting"
-	"code.gitea.io/gitea/modules/tempdir"
+	"gitea.dev/modules/git/gitcmd"
+	"gitea.dev/modules/log"
+	"gitea.dev/modules/setting"
+	"gitea.dev/modules/tempdir"
+	"gitea.dev/modules/testlogger"
 
 	"github.com/hashicorp/go-version"
 )
 
-const RequiredVersion = "2.6.0" // the minimum Git version required
+const RequiredVersion = "2.13.0" // the minimum Git version required
 
 type Features struct {
 	gitVersion *version.Version
@@ -172,34 +173,25 @@ func InitFull() (err error) {
 	if err = InitSimple(); err != nil {
 		return err
 	}
-
-	if setting.LFS.StartServer {
-		if !DefaultFeatures().CheckVersionAtLeast("2.1.2") {
-			return errors.New("LFS server support requires Git >= 2.1.2")
-		}
-	}
-
 	return syncGitConfig(context.Background())
 }
 
 // RunGitTests helps to init the git module and run tests.
 // FIXME: GIT-PACKAGE-DEPENDENCY: the dependency is not right, setting.Git.HomePath is initialized in this package but used in gitcmd package
 func RunGitTests(m interface{ Run() int }) {
-	fatalf := func(exitCode int, format string, args ...any) {
-		_, _ = fmt.Fprintf(os.Stderr, format, args...)
-		os.Exit(exitCode)
-	}
+	os.Exit(runGitTests(m))
+}
+
+func runGitTests(m interface{ Run() int }) int {
 	gitHomePath, cleanup, err := tempdir.OsTempDir("gitea-test").MkdirTempRandom("git-home")
 	if err != nil {
-		fatalf(1, "unable to create temp dir: %s", err.Error())
+		return testlogger.MainErrorf("unable to create temp dir: %v", err)
 	}
 	defer cleanup()
 
 	setting.Git.HomePath = gitHomePath
 	if err = InitFull(); err != nil {
-		fatalf(1, "failed to call Init: %s", err.Error())
+		return testlogger.MainErrorf("failed to call Init: %v", err)
 	}
-	if exitCode := m.Run(); exitCode != 0 {
-		fatalf(exitCode, "run test failed, ExitCode=%d", exitCode)
-	}
+	return m.Run()
 }

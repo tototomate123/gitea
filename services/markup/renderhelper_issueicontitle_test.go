@@ -6,12 +6,12 @@ package markup
 import (
 	"testing"
 
-	"code.gitea.io/gitea/models/repo"
-	"code.gitea.io/gitea/models/unittest"
-	"code.gitea.io/gitea/modules/markup"
-	"code.gitea.io/gitea/modules/templates"
-	"code.gitea.io/gitea/modules/util"
-	"code.gitea.io/gitea/services/contexttest"
+	"gitea.dev/models/repo"
+	"gitea.dev/models/unittest"
+	"gitea.dev/modules/markup"
+	"gitea.dev/modules/templates"
+	"gitea.dev/modules/util"
+	"gitea.dev/services/contexttest"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -26,7 +26,7 @@ func TestRenderHelperIssueIconTitle(t *testing.T) {
 		IssueIndex: 1,
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, `<a href="/link"><span>octicon-issue-opened(16/text green)</span> issue1 (#1)</a>`, string(htm))
+	assert.Equal(t, `<a href="/link"><span>octicon-issue-opened(16/tw-text-green)</span> issue1 (#1)</a>`, string(htm))
 
 	ctx, _ = contexttest.MockContext(t, "/", contexttest.MockContextOption{Render: templates.PageRenderer()})
 	htm, err = renderRepoIssueIconTitle(ctx, markup.RenderIssueIconTitleOptions{
@@ -36,7 +36,7 @@ func TestRenderHelperIssueIconTitle(t *testing.T) {
 		IssueIndex: 1,
 	})
 	assert.NoError(t, err)
-	assert.Equal(t, `<a href="/link"><span>octicon-issue-opened(16/text green)</span> issue1 (user2/repo1#1)</a>`, string(htm))
+	assert.Equal(t, `<a href="/link"><span>octicon-issue-opened(16/tw-text-green)</span> issue1 (user2/repo1#1)</a>`, string(htm))
 
 	ctx, _ = contexttest.MockContext(t, "/", contexttest.MockContextOption{Render: templates.PageRenderer()})
 	_, err = renderRepoIssueIconTitle(ctx, markup.RenderIssueIconTitleOptions{

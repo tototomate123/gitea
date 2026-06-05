@@ -11,19 +11,19 @@ import (
 	"path/filepath"
 	"strings"
 
-	"code.gitea.io/gitea/models/db"
-	git_model "code.gitea.io/gitea/models/git"
-	repo_model "code.gitea.io/gitea/models/repo"
-	user_model "code.gitea.io/gitea/models/user"
-	"code.gitea.io/gitea/modules/container"
-	"code.gitea.io/gitea/modules/gitrepo"
-	"code.gitea.io/gitea/modules/glob"
-	"code.gitea.io/gitea/modules/graceful"
-	"code.gitea.io/gitea/modules/log"
-	"code.gitea.io/gitea/modules/optional"
-	repo_module "code.gitea.io/gitea/modules/repository"
-	"code.gitea.io/gitea/modules/setting"
-	notify_service "code.gitea.io/gitea/services/notify"
+	"gitea.dev/models/db"
+	git_model "gitea.dev/models/git"
+	repo_model "gitea.dev/models/repo"
+	user_model "gitea.dev/models/user"
+	"gitea.dev/modules/container"
+	"gitea.dev/modules/gitrepo"
+	"gitea.dev/modules/glob"
+	"gitea.dev/modules/graceful"
+	"gitea.dev/modules/log"
+	"gitea.dev/modules/optional"
+	repo_module "gitea.dev/modules/repository"
+	"gitea.dev/modules/setting"
+	notify_service "gitea.dev/services/notify"
 )
 
 func deleteFailedAdoptRepository(repoID int64) error {
@@ -240,16 +240,15 @@ func DeleteUnadoptedRepository(ctx context.Context, doer, u *user_model.User, re
 
 type unadoptedRepositories struct {
 	repositories []string
-	index        int
-	start        int
-	end          int
+	count        int64
+	start, end   int64
 }
 
 func (unadopted *unadoptedRepositories) add(repository string) {
-	if unadopted.index >= unadopted.start && unadopted.index < unadopted.end {
+	if unadopted.count >= unadopted.start && unadopted.count < unadopted.end {
 		unadopted.repositories = append(unadopted.repositories, repository)
 	}
-	unadopted.index++
+	unadopted.count++
 }
 
 func checkUnadoptedRepositories(ctx context.Context, userName string, repoNamesToCheck []string, unadopted *unadoptedRepositories) error {
@@ -291,7 +290,8 @@ func checkUnadoptedRepositories(ctx context.Context, userName string, repoNamesT
 }
 
 // ListUnadoptedRepositories lists all the unadopted repositories that match the provided query
-func ListUnadoptedRepositories(ctx context.Context, query string, opts *db.ListOptions) ([]string, int, error) {
+func ListUnadoptedRepositories(ctx context.Context, query string, opts *db.ListOptions) ([]string, int64, error) {
+	opts.SetDefaultValues()
 	globUser, _ := glob.Compile("*")
 	globRepo, _ := glob.Compile("*")
 
@@ -311,12 +311,12 @@ func ListUnadoptedRepositories(ctx context.Context, query string, opts *db.ListO
 	}
 	var repoNamesToCheck []string
 
-	start := (opts.Page - 1) * opts.PageSize
+	start := int64((opts.Page - 1) * opts.PageSize)
 	unadopted := &unadoptedRepositories{
 		repositories: make([]string, 0, opts.PageSize),
 		start:        start,
-		end:          start + opts.PageSize,
-		index:        0,
+		end:          start + int64(opts.PageSize),
+		count:        0,
 	}
 
 	var userName string
@@ -372,5 +372,5 @@ func ListUnadoptedRepositories(ctx context.Context, query string, opts *db.ListO
 		return nil, 0, err
 	}
 
-	return unadopted.repositories, unadopted.index, nil
+	return unadopted.repositories, unadopted.count, nil
 }

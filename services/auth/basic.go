@@ -7,14 +7,14 @@ package auth
 import (
 	"net/http"
 
-	actions_model "code.gitea.io/gitea/models/actions"
-	auth_model "code.gitea.io/gitea/models/auth"
-	user_model "code.gitea.io/gitea/models/user"
-	"code.gitea.io/gitea/modules/auth/httpauth"
-	"code.gitea.io/gitea/modules/log"
-	"code.gitea.io/gitea/modules/setting"
-	"code.gitea.io/gitea/modules/timeutil"
-	"code.gitea.io/gitea/modules/util"
+	actions_model "gitea.dev/models/actions"
+	auth_model "gitea.dev/models/auth"
+	user_model "gitea.dev/models/user"
+	"gitea.dev/modules/auth/httpauth"
+	"gitea.dev/modules/log"
+	"gitea.dev/modules/setting"
+	"gitea.dev/modules/timeutil"
+	"gitea.dev/modules/util"
 )
 
 // Ensure the struct implements the interface.
@@ -41,13 +41,6 @@ func (b *Basic) Name() string {
 }
 
 func (b *Basic) parseAuthBasic(req *http.Request) (ret struct{ authToken, uname, passwd string }) {
-	// Basic authentication should only fire on API, Feed, Download, Archives or on Git or LFSPaths
-	// Not all feed (rss/atom) clients feature the ability to add cookies or headers, so we need to allow basic auth for feeds
-	detector := newAuthPathDetector(req)
-	if !detector.isAPIPath() && !detector.isFeedRequest(req) && !detector.isContainerPath() && !detector.isAttachmentDownload() && !detector.isArchivePath() && !detector.isGitRawOrAttachOrLFSPath() {
-		return ret
-	}
-
 	authHeader := req.Header.Get("Authorization")
 	if authHeader == "" {
 		return ret
@@ -76,7 +69,7 @@ func (b *Basic) parseAuthBasic(req *http.Request) (ret struct{ authToken, uname,
 // VerifyAuthToken only the access token provided as parameter, used by other auth methods that want to reuse access token verification logic
 func (b *Basic) VerifyAuthToken(req *http.Request, w http.ResponseWriter, store DataStore, sess SessionStore, authToken string) (*user_model.User, error) {
 	// get oauth2 token's user's ID
-	_, uid := GetOAuthAccessTokenScopeAndUserID(req.Context(), authToken)
+	accessTokenScope, uid := GetOAuthAccessTokenScopeAndUserID(req.Context(), authToken)
 	if uid != 0 {
 		log.Trace("Basic Authorization: Valid OAuthAccessToken for user[%d]", uid)
 
@@ -88,6 +81,7 @@ func (b *Basic) VerifyAuthToken(req *http.Request, w http.ResponseWriter, store 
 
 		store.GetData()["LoginMethod"] = OAuth2TokenMethodName
 		store.GetData()["IsApiToken"] = true
+		store.GetData()["ApiTokenScope"] = accessTokenScope
 		return u, nil
 	}
 
