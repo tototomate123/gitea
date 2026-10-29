@@ -46,8 +46,8 @@ func ListLabels(ctx *context.APIContext) {
 	// responses:
 	//   "200":
 	//     "$ref": "#/responses/LabelList"
-	//   "404":
-	//     "$ref": "#/responses/notFound"
+	//   default:
+	//     "$ref": "#/responses/error"
 
 	labels, err := issues_model.GetLabelsByRepoID(ctx, ctx.Repo.Repository.ID, ctx.FormString("sort"), utils.GetListOptions(ctx))
 	if err != nil {
@@ -92,8 +92,8 @@ func GetLabel(ctx *context.APIContext) {
 	// responses:
 	//   "200":
 	//     "$ref": "#/responses/Label"
-	//   "404":
-	//     "$ref": "#/responses/notFound"
+	//   default:
+	//     "$ref": "#/responses/error"
 
 	var (
 		l   *issues_model.Label
@@ -106,11 +106,7 @@ func GetLabel(ctx *context.APIContext) {
 		l, err = issues_model.GetLabelInRepoByID(ctx, ctx.Repo.Repository.ID, intID)
 	}
 	if err != nil {
-		if issues_model.IsErrRepoLabelNotExist(err) {
-			ctx.APIErrorNotFound()
-		} else {
-			ctx.APIErrorInternal(err)
-		}
+		ctx.APIErrorAuto(err)
 		return
 	}
 
@@ -144,16 +140,14 @@ func CreateLabel(ctx *context.APIContext) {
 	// responses:
 	//   "201":
 	//     "$ref": "#/responses/Label"
-	//   "404":
-	//     "$ref": "#/responses/notFound"
-	//   "422":
-	//     "$ref": "#/responses/validationError"
+	//   default:
+	//     "$ref": "#/responses/error"
 
-	form := web.GetForm(ctx).(*api.CreateLabelOption)
+	form := web.GetForm[*api.CreateLabelOption](ctx)
 
 	color, err := label.NormalizeColor(form.Color)
 	if err != nil {
-		ctx.APIError(http.StatusUnprocessableEntity, err)
+		ctx.APIError(http.StatusUnprocessableEntity, err.Error())
 		return
 	}
 	form.Color = color
@@ -206,19 +200,13 @@ func EditLabel(ctx *context.APIContext) {
 	// responses:
 	//   "200":
 	//     "$ref": "#/responses/Label"
-	//   "404":
-	//     "$ref": "#/responses/notFound"
-	//   "422":
-	//     "$ref": "#/responses/validationError"
+	//   default:
+	//     "$ref": "#/responses/error"
 
-	form := web.GetForm(ctx).(*api.EditLabelOption)
+	form := web.GetForm[*api.EditLabelOption](ctx)
 	l, err := issues_model.GetLabelInRepoByID(ctx, ctx.Repo.Repository.ID, ctx.PathParamInt64("id"))
 	if err != nil {
-		if issues_model.IsErrRepoLabelNotExist(err) {
-			ctx.APIErrorNotFound()
-		} else {
-			ctx.APIErrorInternal(err)
-		}
+		ctx.APIErrorAuto(err)
 		return
 	}
 
@@ -231,7 +219,7 @@ func EditLabel(ctx *context.APIContext) {
 	if form.Color != nil {
 		color, err := label.NormalizeColor(*form.Color)
 		if err != nil {
-			ctx.APIError(http.StatusUnprocessableEntity, err)
+			ctx.APIError(http.StatusUnprocessableEntity, err.Error())
 			return
 		}
 		l.Color = color
@@ -273,10 +261,10 @@ func DeleteLabel(ctx *context.APIContext) {
 	// responses:
 	//   "204":
 	//     "$ref": "#/responses/empty"
-	//   "404":
-	//     "$ref": "#/responses/notFound"
+	//   default:
+	//     "$ref": "#/responses/error"
 
-	if err := issues_model.DeleteLabel(ctx, ctx.Repo.Repository.ID, ctx.PathParamInt64("id")); err != nil {
+	if err := issues_model.DeleteRepoLabel(ctx, ctx.Repo.Repository.ID, ctx.PathParamInt64("id")); err != nil {
 		ctx.APIErrorInternal(err)
 		return
 	}

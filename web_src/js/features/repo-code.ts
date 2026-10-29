@@ -1,7 +1,7 @@
 import {svg} from '../svg.ts';
 import {createTippy} from '../modules/tippy.ts';
-import {toAbsoluteUrl} from '../utils.ts';
 import {addDelegatedEventListener} from '../utils/dom.ts';
+import {registerAsyncHashChangeListener} from '../modules/hashchange.ts';
 
 function changeHash(hash: string) {
   if (window.history.pushState) {
@@ -24,16 +24,16 @@ function selectRange(range: string): Element | null {
     if (!refInNewIssue) return;
     const urlIssueNew = refInNewIssue.getAttribute('data-url-issue-new');
     const urlParamBodyLink = refInNewIssue.getAttribute('data-url-param-body-link')!;
-    const issueContent = `${toAbsoluteUrl(urlParamBodyLink)}#${anchor}`; // the default content for issue body
+    const issueContent = `${urlParamBodyLink}#${anchor}`; // the default content for issue body
     refInNewIssue.setAttribute('href', `${urlIssueNew}?body=${encodeURIComponent(issueContent)}`);
   };
 
   const updateViewGitBlameFragment = function (anchor: string) {
     if (!viewGitBlame) return;
     let href = viewGitBlame.getAttribute('href')!;
-    href = `${href.replace(/#L\d+$|#L\d+-L\d+$/, '')}`;
+    href = href.replace(/#L\d+$|#L\d+-L\d+$/, '');
     if (anchor.length !== 0) {
-      href = `${href}#${anchor}`;
+      href += `#${anchor}`;
     }
     viewGitBlame.setAttribute('href', href);
   };
@@ -59,6 +59,7 @@ function selectRange(range: string): Element | null {
     stopLineNum = tmp;
     range = `${stop}-${start}`;
   }
+  if (startLineNum < 1) return null;
 
   const first = elLineNums[startLineNum - 1] ?? null;
   for (let i = startLineNum - 1; i <= stopLineNum - 1 && i < elLineNums.length; i++) {
@@ -142,6 +143,5 @@ export function initRepoCodeView() {
       showLineButton();
     }
   };
-  onHashChange();
-  window.addEventListener('hashchange', onHashChange);
+  registerAsyncHashChangeListener(onHashChange);
 }

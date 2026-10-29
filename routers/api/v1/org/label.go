@@ -41,8 +41,8 @@ func ListLabels(ctx *context.APIContext) {
 	// responses:
 	//   "200":
 	//     "$ref": "#/responses/LabelList"
-	//   "404":
-	//     "$ref": "#/responses/notFound"
+	//   default:
+	//     "$ref": "#/responses/error"
 
 	labels, err := issues_model.GetLabelsByOrgID(ctx, ctx.Org.Organization.ID, ctx.FormString("sort"), utils.GetListOptions(ctx))
 	if err != nil {
@@ -82,15 +82,13 @@ func CreateLabel(ctx *context.APIContext) {
 	// responses:
 	//   "201":
 	//     "$ref": "#/responses/Label"
-	//   "404":
-	//     "$ref": "#/responses/notFound"
-	//   "422":
-	//     "$ref": "#/responses/validationError"
-	form := web.GetForm(ctx).(*api.CreateLabelOption)
+	//   default:
+	//     "$ref": "#/responses/error"
+	form := web.GetForm[*api.CreateLabelOption](ctx)
 	form.Color = strings.Trim(form.Color, " ")
 	color, err := label.NormalizeColor(form.Color)
 	if err != nil {
-		ctx.APIError(http.StatusUnprocessableEntity, err)
+		ctx.APIError(http.StatusUnprocessableEntity, err.Error())
 		return
 	}
 	form.Color = color
@@ -132,8 +130,8 @@ func GetLabel(ctx *context.APIContext) {
 	// responses:
 	//   "200":
 	//     "$ref": "#/responses/Label"
-	//   "404":
-	//     "$ref": "#/responses/notFound"
+	//   default:
+	//     "$ref": "#/responses/error"
 
 	var (
 		label *issues_model.Label
@@ -185,11 +183,9 @@ func EditLabel(ctx *context.APIContext) {
 	// responses:
 	//   "200":
 	//     "$ref": "#/responses/Label"
-	//   "404":
-	//     "$ref": "#/responses/notFound"
-	//   "422":
-	//     "$ref": "#/responses/validationError"
-	form := web.GetForm(ctx).(*api.EditLabelOption)
+	//   default:
+	//     "$ref": "#/responses/error"
+	form := web.GetForm[*api.EditLabelOption](ctx)
 	l, err := issues_model.GetLabelInOrgByID(ctx, ctx.Org.Organization.ID, ctx.PathParamInt64("id"))
 	if err != nil {
 		if issues_model.IsErrOrgLabelNotExist(err) {
@@ -209,7 +205,7 @@ func EditLabel(ctx *context.APIContext) {
 	if form.Color != nil {
 		color, err := label.NormalizeColor(*form.Color)
 		if err != nil {
-			ctx.APIError(http.StatusUnprocessableEntity, err)
+			ctx.APIError(http.StatusUnprocessableEntity, err.Error())
 			return
 		}
 		l.Color = color
@@ -246,10 +242,10 @@ func DeleteLabel(ctx *context.APIContext) {
 	// responses:
 	//   "204":
 	//     "$ref": "#/responses/empty"
-	//   "404":
-	//     "$ref": "#/responses/notFound"
+	//   default:
+	//     "$ref": "#/responses/error"
 
-	if err := issues_model.DeleteLabel(ctx, ctx.Org.Organization.ID, ctx.PathParamInt64("id")); err != nil {
+	if err := issues_model.DeleteOrgLabel(ctx, ctx.Org.Organization.ID, ctx.PathParamInt64("id")); err != nil {
 		ctx.APIErrorInternal(err)
 		return
 	}
